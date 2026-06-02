@@ -1,12 +1,3 @@
-//
-// Created by Swayam Singal on 07/05/26.
-//
-
-#ifndef NESEMULATOR_CPU6502_H
-#define NESEMULATOR_CPU6502_H
-
-#endif //NESEMULATOR_CPU6502_H
-
 #pragma once
 
 // With little modification, reliance upon the stdlib can

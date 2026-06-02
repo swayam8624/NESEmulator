@@ -54,7 +54,7 @@ cpu6502::~cpu6502()
 ///////////////////////////////////////////////////////////////////////////////
 // BUS CONNECTIVITY
 
-// Reads an 8-bit byte from the bus, located at the specified 16-bit address
+// reads an 8-bit byte from the bus, located at the specified 16-bit address
 uint8_t cpu6502::read(uint16_t a)
 {
 	// In normal operation "read only" is set to false. This may seem odd. Some
@@ -62,13 +62,13 @@ uint8_t cpu6502::read(uint16_t a)
 	// is intentional under normal circumstances. However the disassembler will
 	// want to read the data at an address without changing the state of the
 	// devices on the bus
-	return bus->read(a, false);
+	return bus->cpuRead(a, false);
 }
 
 // Writes a byte to the bus at the specified address
 void cpu6502::write(uint16_t a, uint8_t d)
 {
-	bus->write(a, d);
+	bus->cpuWrite(a, d);
 }
 
 
@@ -144,7 +144,7 @@ void cpu6502::irq()
 		write(0x0100 + stkp, status);
 		stkp--;
 
-		// Read new program counter location from fixed address
+		// read new program counter location from fixed address
 		addr_abs = 0xFFFE;
 		uint16_t lo = read(addr_abs + 0);
 		uint16_t hi = read(addr_abs + 1);
@@ -195,7 +195,7 @@ void cpu6502::clock()
 	// the next one is ready to be executed.
 	if (cycles == 0)
 	{
-		// Read next instruction byte. This 8-bit value is used to index
+		// read next instruction byte. This 8-bit value is used to index
 		// the translation table to get the relevant information about
 		// how to implement the instruction
 		opcode = read(pc);
@@ -1434,8 +1434,8 @@ std::map<uint16_t, std::string> cpu6502::disassemble(uint16_t nStart, uint16_t n
 		// Prefix line with instruction address
 		std::string sInst = "$" + hex(addr, 4) + ": ";
 
-		// Read instruction, and get its readable name
-		uint8_t opcode = bus->read(addr, true); addr++;
+		// read instruction, and get its readable name
+		uint8_t opcode = bus->cpuRead(addr, true); addr++;
 		sInst += lookup[opcode].name + " ";
 
 		// Get oprands from desired locations, and form the
@@ -1449,66 +1449,66 @@ std::map<uint16_t, std::string> cpu6502::disassemble(uint16_t nStart, uint16_t n
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::IMM)
 		{
-			value = bus->read(addr, true); addr++;
+			value = bus->cpuRead(addr, true); addr++;
 			sInst += "#$" + hex(value, 2) + " {IMM}";
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::ZP0)
 		{
-			lo = bus->read(addr, true); addr++;
+			lo = bus->cpuRead(addr, true); addr++;
 			hi = 0x00;
 			sInst += "$" + hex(lo, 2) + " {ZP0}";
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::ZPX)
 		{
-			lo = bus->read(addr, true); addr++;
+			lo = bus->cpuRead(addr, true); addr++;
 			hi = 0x00;
 			sInst += "$" + hex(lo, 2) + ", X {ZPX}";
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::ZPY)
 		{
-			lo = bus->read(addr, true); addr++;
+			lo = bus->cpuRead(addr, true); addr++;
 			hi = 0x00;
 			sInst += "$" + hex(lo, 2) + ", Y {ZPY}";
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::IZX)
 		{
-			lo = bus->read(addr, true); addr++;
+			lo = bus->cpuRead(addr, true); addr++;
 			hi = 0x00;
 			sInst += "($" + hex(lo, 2) + ", X) {IZX}";
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::IZY)
 		{
-			lo = bus->read(addr, true); addr++;
+			lo = bus->cpuRead(addr, true); addr++;
 			hi = 0x00;
 			sInst += "($" + hex(lo, 2) + "), Y {IZY}";
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::ABS)
 		{
-			lo = bus->read(addr, true); addr++;
-			hi = bus->read(addr, true); addr++;
+			lo = bus->cpuRead(addr, true); addr++;
+			hi = bus->cpuRead(addr, true); addr++;
 			sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + " {ABS}";
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::ABX)
 		{
-			lo = bus->read(addr, true); addr++;
-			hi = bus->read(addr, true); addr++;
+			lo = bus->cpuRead(addr, true); addr++;
+			hi = bus->cpuRead(addr, true); addr++;
 			sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + ", X {ABX}";
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::ABY)
 		{
-			lo = bus->read(addr, true); addr++;
-			hi = bus->read(addr, true); addr++;
+			lo = bus->cpuRead(addr, true); addr++;
+			hi = bus->cpuRead(addr, true); addr++;
 			sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + ", Y {ABY}";
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::IND)
 		{
-			lo = bus->read(addr, true); addr++;
-			hi = bus->read(addr, true); addr++;
+			lo = bus->cpuRead(addr, true); addr++;
+			hi = bus->cpuRead(addr, true); addr++;
 			sInst += "($" + hex((uint16_t)(hi << 8) | lo, 4) + ") {IND}";
 		}
 		else if (lookup[opcode].addrmode == &cpu6502::REL)
 		{
-			value = bus->read(addr, true); addr++;
+			value = bus->cpuRead(addr, true); addr++;
 			sInst += "$" + hex(value, 2) + " [$" + hex(addr + value, 4) + "] {REL}";
 		}
 
@@ -1522,4 +1522,4 @@ std::map<uint16_t, std::string> cpu6502::disassemble(uint16_t nStart, uint16_t n
 	return mapLines;
 }
 
-// End of File 
+// End of File
