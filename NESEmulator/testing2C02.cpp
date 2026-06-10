@@ -1,11 +1,10 @@
 #include <iostream>
 #include <sstream>
 
-#include "Bus.h"
-#include "cpu6502.h"
+import Kairo.NES;
 
 #define kairo_PGE_APPLICATION
-#include "PixelGameEngine.h"
+#include "KairoPixelGameEngine.cppm"
 
 
 
