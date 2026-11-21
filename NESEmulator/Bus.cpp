@@ -1,3 +1,4 @@
+// TEACHING MAP: NES MEMORY BUS: The CPU delegates address access to this device router. Bus owns RAM mirroring, cartridge/mapper forwarding, PPU/APU register dispatch, controller latches, OAM DMA and emulated timing. main.cpp loads the Cartridge and supplies input; cpu6502.cpp executes instructions; ppu2C02.cpp produces video state. Check DMA stalls and CPU/PPU clock ratios before modifying timing.
 module;
 #include <algorithm>
 #include <array>
@@ -34,6 +35,9 @@ void Bus::SetSampleFrequency(uint32_t sample_rate)
 	dAudioTimePerNESClock = 1.0 / 5369318.0; // PPU Clock Frequency
 }
 
+// CPU write decoder: cartridge receives the address first; later branches select mirrored RAM,
+// PPU/APU, DMA or controller hardware. Register writes have side effects, unlike ordinary RAM
+// writes.
 void Bus::cpuWrite(uint16_t addr, uint8_t data)
 {	
 	if (cart->cpuWrite(addr, data))
