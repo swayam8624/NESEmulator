@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Audio hardware model. Bus::cpuRead/cpuWrite forward APU register accesses and Bus::clock calls
+// apu.clock(). Inspect current implementation before assuming cycle-perfect channels or audio output; the
+// app update loop drives the emulator frame.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 module;
 #include <algorithm>
 #include <array>
