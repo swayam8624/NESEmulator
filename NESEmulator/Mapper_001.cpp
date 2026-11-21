@@ -24,16 +24,24 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
+// TEACHING API: Mapper_001::Mapper_001
+// Initialize mapper-local static RAM; CPU $6000-$7FFF accesses this through special handled-value sentinel.
+// Integration: MMC1: serial control-register writes select PRG/CHR banks, mirroring and cartridge RAM.
 Mapper_001::Mapper_001(uint8_t prgBanks, uint8_t chrBanks) : Mapper(prgBanks, chrBanks)
 {
 	vRAMStatic.resize(32 * 1024);
 }
 
 
+// TEACHING API: Mapper_001::~Mapper_001
+// Destruction follows virtual mapper ownership in Cartridge; this class does not own PRG/CHR ROM buffers.
 Mapper_001::~Mapper_001()
 {
 }
 
+// TEACHING API: Mapper_001::cpuMapRead
+// Read cartridge RAM or translate PRG addresses using control-selected 16 KiB/32 KiB bank mode.
+// Integration: MMC1: serial control-register writes select PRG/CHR banks, mirroring and cartridge RAM.
 bool Mapper_001::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 {
 	if (addr >= 0x6000 && addr <= 0x7FFF)
@@ -78,6 +86,9 @@ bool Mapper_001::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 	return false;
 }
 
+// TEACHING API: Mapper_001::cpuMapWrite
+// Process serial bits written by CPU through Bus/Cartridge; completed writes change control/PRG/CHR bank registers.
+// Integration: MMC1: serial control-register writes select PRG/CHR banks, mirroring and cartridge RAM.
 bool Mapper_001::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 {
 	if (addr >= 0x6000 && addr <= 0x7FFF)
@@ -192,6 +203,9 @@ bool Mapper_001::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 	return false;
 }
 
+// TEACHING API: Mapper_001::ppuMapRead
+// Select CHR bank(s) for pattern fetches, depending on 4 KiB/8 KiB mode. A stale bank yields wrong tile graphics.
+// Integration: MMC1: serial control-register writes select PRG/CHR banks, mirroring and cartridge RAM.
 bool Mapper_001::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 {
 	if (addr < 0x2000)
@@ -230,6 +244,9 @@ bool Mapper_001::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 	return false;
 }
 
+// TEACHING API: Mapper_001::ppuMapWrite
+// Pass through mapped CHR writes only when compatible with RAM configuration; verify ROM write protection.
+// Integration: MMC1: serial control-register writes select PRG/CHR banks, mirroring and cartridge RAM.
 bool Mapper_001::ppuMapWrite(uint16_t addr, uint32_t &mapped_addr)
 {
 	if (addr < 0x2000)
@@ -246,6 +263,9 @@ bool Mapper_001::ppuMapWrite(uint16_t addr, uint32_t &mapped_addr)
 		return false;
 }
 
+// TEACHING API: Mapper_001::reset
+// Restore shift register, control, bank and mirroring state to mapper-defined defaults.
+// Integration: MMC1: serial control-register writes select PRG/CHR banks, mirroring and cartridge RAM.
 void Mapper_001::reset()
 {
 	nControlRegister = 0x1C;
@@ -261,6 +281,9 @@ void Mapper_001::reset()
 	nPRGBankSelect16Hi = nPRGBanks - 1;
 }
 
+// TEACHING API: Mapper_001::mirror
+// Expose the active nametable mirroring choice to Cartridge and PPU.
+// Integration: MMC1: serial control-register writes select PRG/CHR banks, mirroring and cartridge RAM.
 MIRROR Mapper_001::mirror()
 {
 	
