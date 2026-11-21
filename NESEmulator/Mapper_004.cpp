@@ -1,3 +1,8 @@
+// TEACHING GUIDE — Mapper_004.cpp
+// Mapper 4 / MMC3: PRG/CHR bank registers, nametable mirroring and scanline-driven IRQ state. 
+// Mapper IRQs connect PPU scanline behavior to Bus and CPU interrupt handling.
+// Read ../READING_ORDER.md for API interactions and upstream code attribution.
+
 module;
 #include <algorithm>
 #include <array>
@@ -282,6 +287,8 @@ void Mapper_004::irqClear()
 	bIRQActive = false;
 }
 
+// Update the MMC3 IRQ counter at the PPU scanline boundary. When enabled,
+// IRQ state is later observed by Bus::clock and delivered to cpu6502::irq().
 void Mapper_004::scanline()
 {
 	if (nIRQCounter == 0)

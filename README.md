@@ -1,5 +1,12 @@
 # KairoNES
 
+> **Start learning here:** [READING_ORDER.md](READING_ORDER.md) gives a linked, step-by-step tour of every emulator source file, the chip/host call graph, CPU-versus-PPU addresses, clock scheduling, and an API glossary. Source comments link each subsystem to its collaborators.
+>
+> **Open source for learning and development:** independently owned contributions are [MIT-licensed](LICENSE), while OneLoneCoder-derived emulator and PixelGameEngine material retains its existing **OLC-3** terms. Read [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before reuse, modification, or binary redistribution. Improvements are welcome under [CONTRIBUTING.md](CONTRIBUTING.md).
+>
+> **Implementation limitations:** the APU is partial, the active CMake target has no automated conformance tests, and the current cartridge loader needs stronger truncated/unsupported ROM rejection. Visual demos are not evidence of cycle-accurate emulation.
+
+
 KairoNES is a C++23 NES emulator project built around C++ modules. The emulator core is exposed through `NESEmulator/KairoNES.cppm`, with implementation units in `.cpp` files.
 
 ## Requirements

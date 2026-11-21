@@ -1,3 +1,10 @@
+// TEACHING GUIDE — NESEmulator/ppu2C02.cpp
+// PPU picture formation and timing: CPU register operations are distinct from the PPU's own 
+// nametable/palette/pattern address space. The PPU fetches CHR through Cartridge/Mapper and 
+// exposes completed pixels to the host frontend in main.cpp.
+// Read ../READING_ORDER.md for the cross-file call graph and API glossary.
+// Explanatory comments do not alter source ownership or license terms.
+
 module;
 #include <algorithm>
 #include <array>
@@ -397,6 +404,8 @@ void ppu2C02::cpuWrite(uint16_t addr, uint8_t data)
 	}
 }
 
+// PPU address-space fetch; do not confuse with CPU-side register reads.
+// Cartridge/Mapper supply pattern-table bytes; PPU owns nametable/palette RAM.
 uint8_t ppu2C02::ppuRead(uint16_t addr, bool rdonly)
 {
 	uint8_t data = 0x00;
@@ -534,6 +543,9 @@ void ppu2C02::reset()
 	odd_frame = false;
 }
 
+// One PPU dot. Scanline/cycle timing advances tile fetch, sprite rendering,
+// frame completion and NMI behavior. Bus::clock schedules this independently
+// of the CPU; scanline events may also advance an MMC3 mapper IRQ counter.
 void ppu2C02::clock()
 {
 	// As we progress through scanlines and cycles, the PPU is effectively

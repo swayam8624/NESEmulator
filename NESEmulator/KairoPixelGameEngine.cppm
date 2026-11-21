@@ -1,3 +1,11 @@
+// THIRD-PARTY PROVENANCE / TEACHING GUIDE
+// This PixelGameEngine source appears adapted/renamed from OneLoneCoder's
+// olcPixelGameEngine; its upstream OLC-3 attribution and license must survive.
+// This is the *host* API (OnUserCreate, OnUserUpdate, GetKey, Draw, Sprite,
+// platform/audio glue), not the emulated NES hardware. See the source guide
+// at ../READING_ORDER.md and license details at ../THIRD_PARTY_NOTICES.md.
+// The annotation below does NOT assert ownership of original upstream code.
+
 #pragma region hello_world_example
 // O------------------------------------------------------------------------------O
 // | Example "Hello World" Program (main.cpp)                                     |

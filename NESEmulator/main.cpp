@@ -1,3 +1,9 @@
+// TEACHING GUIDE — Host frontend. Demo_KairoNES implements PixelGameEngine's
+// OnUserCreate/OnUserUpdate lifecycle. It imports the Kairo.NES module, loads
+// Cartridge, maps keyboard keys to Bus controller bits, advances Bus::clock,
+// and draws the PPU's screen. Host frames are not CPU/PPU hardware cycles.
+// Read ../READING_ORDER.md for the complete call graph and host API glossary.
+
 #include <iostream>
 #include <sstream>
 #include <deque>
@@ -165,6 +171,8 @@ private:
 			return 0.0f;
 	}
 
+	// PixelGameEngine calls this once at startup. Install the Cartridge into
+// Bus, reset chip state, and configure the audio sample rate.
 	bool OnUserCreate() override
 	{
 		std::vector<std::string> romPaths;

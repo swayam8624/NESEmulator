@@ -1,3 +1,7 @@
+// TEACHING GUIDE — GxROM mapper (66): CPU writes select PRG/CHR banks;
+// Cartridge maps the returned offset to its owned data, while PPU uses CHR.
+// Read ../READING_ORDER.md for the memory access chain.
+
 module;
 #include <algorithm>
 #include <array>
@@ -36,6 +40,8 @@ bool Mapper_066::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 		return false;
 }
 
+// This write updates bank selection rather than changing stored ROM bytes.
+// Follow cpu6502::write -> Bus -> Cartridge -> Mapper_066.
 bool Mapper_066::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 {
 	if (addr >= 0x8000 && addr <= 0xFFFF)

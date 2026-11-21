@@ -1,3 +1,9 @@
+// TEACHING GUIDE — Mapper_000.cpp
+// Mapper 0 / NROM: fixed PRG bank addressing, possible 16-KiB mirror, and CHR-ROM or CHR-RAM 
+// behavior. Start here before learning bank switching; Cartridge owns the actual PRG/CHR 
+// bytes.
+// Read ../READING_ORDER.md for API interactions and upstream code attribution.
+
 module;
 #include <algorithm>
 #include <array>
@@ -30,6 +36,8 @@ void Mapper_000::reset()
 
 }
 
+// Resolve fixed CPU PRG addresses to offsets in Cartridge::vPRGMemory.
+// No write-controlled bank register exists in NROM.
 bool Mapper_000::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 {
 	// if PRGROM is 16KB

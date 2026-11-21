@@ -1,3 +1,11 @@
+// TEACHING GUIDE — NESEmulator/cpu6502.cpp
+// 6502 execution: the opcode lookup maps an instruction byte to its addressing mode and 
+// operation. Each CPU clock is scheduled by Bus; all memory access goes through 
+// Bus::cpuRead/cpuWrite. Trace fetch/decode/address calculation before individual opcode 
+// functions.
+// Read ../READING_ORDER.md for the cross-file call graph and API glossary.
+// Explanatory comments do not alter source ownership or license terms.
+
 module;
 #include <algorithm>
 #include <array>
@@ -191,6 +199,9 @@ void cpu6502::nmi()
 }
 
 // Perform one clock cycles worth of emulation
+// One *CPU* clock. When the current instruction's cycle budget expires,
+// fetch the next opcode over the Bus, run its addressing mode and operation,
+// and charge optional additional cycles. The PPU runs on a different cadence.
 void cpu6502::clock()
 {
 	// Each instruction requires a variable number of clock cycles to execute.
@@ -517,6 +528,8 @@ uint8_t cpu6502::IZY()
 // 256, i.e. no far reaching memory fetch is required. "fetched"
 // is a variable global to the CPU, and is set by calling this 
 // function. It also returns it for convenience.
+// Obtain the operand from the effective address selected by the addressing
+// mode. Reads go via Bus so cartridge banking and memory-mapped I/O apply.
 uint8_t cpu6502::fetch()
 {
 	if (!(lookup[opcode].addrmode == &cpu6502::IMP))

@@ -1,3 +1,10 @@
+// TEACHING GUIDE — NESEmulator/Bus.cpp
+// Hardware interconnect: implements CPU address dispatch, RAM, controller shift-register 
+// behavior, PPU/APU register access, DMA, audio sampling, and master timing. Cartridge 
+// delegates PRG/CHR address translation to mapper implementations.
+// Read ../READING_ORDER.md for the cross-file call graph and API glossary.
+// Explanatory comments do not alter source ownership or license terms.
+
 module;
 #include <algorithm>
 #include <array>
@@ -34,6 +41,9 @@ void Bus::SetSampleFrequency(uint32_t sample_rate)
 	dAudioTimePerNESClock = 1.0 / 5369318.0; // PPU Clock Frequency
 }
 
+// CPU write route: give the cartridge/mapper the first chance to handle an
+// address; otherwise select RAM, PPU registers, APU, DMA or controller I/O.
+// Follow cpu6502::write -> Bus::cpuWrite -> Cartridge::cpuWrite.
 void Bus::cpuWrite(uint16_t addr, uint8_t data)
 {	
 	if (cart->cpuWrite(addr, data))
@@ -134,6 +144,9 @@ void Bus::reset()
 	dma_transfer = false;
 }
 
+// One master tick: coordinate PPU dots, lower-rate CPU cycles, APU state,
+// DMA, audio sample cadence, and IRQ/NMI delivery. Called from main.cpp's
+// host loop; one host frame is NOT the same as one CPU instruction.
 bool Bus::clock()
 {
 	// Clocking. The heart and soul of an emulator. The running

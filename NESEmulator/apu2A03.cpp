@@ -1,3 +1,10 @@
+// TEACHING GUIDE — NESEmulator/apu2A03.cpp
+// Audio chip model: CPU-side register writes originate in Bus, the system clock advances 
+// sound-channel state, and GetOutputSample supplies a mixed waveform to the Bus's host-audio 
+// resampling path. Current support is intentionally incomplete.
+// Read ../READING_ORDER.md for the cross-file call graph and API glossary.
+// Explanatory comments do not alter source ownership or license terms.
+
 module;
 #include <algorithm>
 #include <array>
@@ -32,6 +39,8 @@ apu2A03::~apu2A03()
 {
 }
 
+// CPU-visible APU register update forwarded from Bus::cpuWrite.
+// The device owns channel state; it does not decode global CPU addresses.
 void apu2A03::cpuWrite(uint16_t addr, uint8_t data)
 {
 	switch (addr)
@@ -165,6 +174,8 @@ uint8_t apu2A03::cpuRead(uint16_t addr)
 	return data;
 }
 
+// Advance emulated audio state, separate from the host's audio callback.
+// Bus controls when to sample the resulting signal for the output stream.
 void apu2A03::clock()
 {
 	// Depending on the frame count, we set a flag to tell 

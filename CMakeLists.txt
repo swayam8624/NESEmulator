@@ -1,3 +1,9 @@
+# TEACHING GUIDE: compile the exported Kairo.NES C++23 module interface and
+# module implementation units into one interactive host executable (`game`).
+# GLUT/OpenGL/Cocoa/libpng are host dependencies, not emulated NES devices.
+# The testing6502/testing2C02 visualization files are NOT automatic CTest tests.
+# See READING_ORDER.md for the file dependency and runtime call graphs.
+
 cmake_minimum_required(VERSION 4.0)
 
 project(NESEmulator LANGUAGES CXX)

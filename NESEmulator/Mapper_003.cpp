@@ -1,3 +1,8 @@
+// TEACHING GUIDE — Mapper_003.cpp
+// Mapper 3 / CNROM: CPU-visible bank-select writes change PPU CHR bank selection. The PPU 
+// consumes these translated addresses through Cartridge::ppuRead.
+// Read ../READING_ORDER.md for API interactions and upstream code attribution.
+
 module;
 #include <algorithm>
 #include <array>
@@ -51,6 +56,8 @@ bool Mapper_003::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 	return false;
 }
 
+// Return a CHR-memory offset selected by the CPU-written bank register;
+// ppu2C02 -> Cartridge::ppuRead -> this mapper is the read chain.
 bool Mapper_003::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 {
 	if (addr < 0x2000)
