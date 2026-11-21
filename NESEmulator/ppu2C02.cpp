@@ -25,6 +25,9 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
+// TEACHING API: ppu2C02::ppu2C02
+// Constructs PPU buffers, palettes and scanline state. It does not start
+// the CPU or create the application window; those belong to Bus/main.cpp.
 ppu2C02::ppu2C02()
 {
 	palScreen[0x00] = kairo::Pixel(84, 84, 84);
@@ -111,6 +114,9 @@ ppu2C02::~ppu2C02()
 	delete sprPatternTable[1];
 }
 
+// TEACHING API: ppu2C02::GetScreen
+// Returns the host-pixel-engine Sprite containing the latest emulated frame.
+// Main renders this sprite. This is display extraction, not a graphics driver.
 kairo::Sprite& ppu2C02::GetScreen()
 {
 	// Simply returns the current sprite holding the rendered screen
@@ -119,6 +125,10 @@ kairo::Sprite& ppu2C02::GetScreen()
 
 
 
+// TEACHING API: ppu2C02::GetPatternTable
+// Produces a debug visualization of CHR tile patterns using the selected
+// palette, reading CHR through ppuRead and cartridge mapper routing.
+// The debugger uses it; this should not replace actual scanline evaluation.
 kairo::Sprite& ppu2C02::GetPatternTable(uint8_t i, uint8_t palette)
 {
 	// This function draw the CHR ROM for a given pattern table into
@@ -211,6 +221,9 @@ kairo::Sprite& ppu2C02::GetPatternTable(uint8_t i, uint8_t palette)
 }
 
 
+// TEACHING API: ppu2C02::GetColourFromPaletteRam
+// Translate palette and pixel index into a host Pixel by reading NES palette
+// RAM through ppuRead. Pixel colors depend on the emulator's master palette.
 kairo::Pixel& ppu2C02::GetColourFromPaletteRam(uint8_t palette, uint8_t pixel)
 {
 	// This is a convenience function that takes a specified palette and pixel
@@ -225,6 +238,9 @@ kairo::Pixel& ppu2C02::GetColourFromPaletteRam(uint8_t palette, uint8_t pixel)
 	// will map the address onto the seperate small RAM attached to the PPU bus.
 }
 
+// TEACHING API: ppu2C02::GetNameTable
+// Returns one debug nametable Sprite. Rendering/nametable addressing still
+// depends on the mirroring policy supplied by Cartridge::Mirror.
 kairo::Sprite& ppu2C02::GetNameTable(uint8_t i)
 {
 	// As of now unused, but a placeholder for nametable visualisation in teh future
@@ -233,6 +249,10 @@ kairo::Sprite& ppu2C02::GetNameTable(uint8_t i)
 
 
 // TEACHING FUNCTION: CPU-facing register API, reached through Bus::cpuRead. Reads may update PPU internal latches/buffers; debugger-only access must preserve observable state.
+// TEACHING API: ppu2C02::cpuRead
+// Handle CPU-visible PPU register reads forwarded by Bus::cpuRead after
+// register address mirroring. Status/data reads can have latch or buffer
+// side effects. rdonly requests debugger-safe access.
 uint8_t ppu2C02::cpuRead(uint16_t addr, bool rdonly)
 {
 	uint8_t data = 0x00;
@@ -337,6 +357,10 @@ uint8_t ppu2C02::cpuRead(uint16_t addr, bool rdonly)
 }
 
 // TEACHING FUNCTION: CPU register writes configure scrolling, OAM, control and video-memory access. The Bus mirrors the physical eight-register address range.
+// TEACHING API: ppu2C02::cpuWrite
+// Handle CPU-visible control, scrolling, OAM and video-memory registers.
+// Bus maps $2000-$3FFF onto eight PPU registers; internal write latches
+// combine sequential scroll/address writes.
 void ppu2C02::cpuWrite(uint16_t addr, uint8_t data)
 {
 	switch (addr)
@@ -409,6 +433,10 @@ void ppu2C02::cpuWrite(uint16_t addr, uint8_t data)
 }
 
 // TEACHING FUNCTION: PPU-side pattern/name/palette memory accessor; cartridge mapper and mirroring rules determine where a video address resolves.
+// TEACHING API: ppu2C02::ppuRead
+// Decode PPU address space: CHR pattern tables through cartridge mapper,
+// nametables via Cartridge::Mirror, and palette RAM with PPU mirroring.
+// This is the pixel pipeline's memory read, not a CPU address read.
 uint8_t ppu2C02::ppuRead(uint16_t addr, bool rdonly)
 {
 	uint8_t data = 0x00;
@@ -466,6 +494,10 @@ uint8_t ppu2C02::ppuRead(uint16_t addr, bool rdonly)
 	return data;
 }
 
+// TEACHING API: ppu2C02::ppuWrite
+// Decode writes to CHR (if mapper allows), nametable and palette storage.
+// Writes can affect subsequent scanline pixels; the cartridge chooses whether
+// pattern memory is ROM or RAM.
 void ppu2C02::ppuWrite(uint16_t addr, uint8_t data)
 {
 	addr &= 0x3FFF;
@@ -517,11 +549,18 @@ void ppu2C02::ppuWrite(uint16_t addr, uint8_t data)
 	}
 }
 
+// TEACHING API: ppu2C02::ConnectCartridge
+// Give the PPU a shared reference to the same Cartridge used by Bus.
+// This ensures PPU CHR bank switching and mapper-dependent mirroring agree
+// with the CPU's cartridge register writes.
 void ppu2C02::ConnectCartridge(const std::shared_ptr<Cartridge>& cartridge)
 {
 	this->cart = cartridge;
 }
 
+// TEACHING API: ppu2C02::reset
+// Reset PPU registers, latches, scroll address and raster timing state.
+// Bus::reset coordinates this with CPU/APU/mapper reset.
 void ppu2C02::reset()
 {
 	fine_x = 0x00;
@@ -547,6 +586,10 @@ void ppu2C02::reset()
 }
 
 // TEACHING FUNCTION: Advance scanline and dot-level rendering pipelines. Produces frame pixels and NMI-related state consumed by the Bus and host display.
+// TEACHING API: ppu2C02::clock
+// Advance one PPU dot of background/sprite fetch and pixel composition.
+// Publishes screen pixels, scanline transitions and NMI state consumed by Bus.
+// Timing-sensitive games depend on scanline/dot order; use PPU test ROMs.
 void ppu2C02::clock()
 {
 	// As we progress through scanlines and cycles, the PPU is effectively
