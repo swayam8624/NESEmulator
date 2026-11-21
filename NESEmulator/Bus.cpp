@@ -34,6 +34,10 @@ Bus::~Bus()
 {
 }
 
+// Audio scheduling: convert requested host samples/second into a time
+// interval, while NES master ticks use the fixed PPU clock period. The
+// returned ready flag from Bus::clock tells the host when to consume output.
+// Caller must supply a nonzero rate; this function does not validate it.
 void Bus::SetSampleFrequency(uint32_t sample_rate)
 {
 	dAudioTimePerSystemSample = 1.0 / (double)sample_rate;
@@ -126,6 +130,9 @@ uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 	return data;
 }
 
+// Plug the same cartridge into the CPU-side Bus and PPU. The mapper then
+// handles PRG accesses from cpuRead/cpuWrite and CHR accesses from ppuRead/
+// ppuWrite. A null or unsupported Cartridge is not safe for clocking.
 void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 {
 	// Connects cartridge to both Main Bus and CPU Bus
@@ -133,6 +140,8 @@ void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 	ppu.ConnectCartridge(cartridge);
 }
 
+// Resets mapper/CPU/PPU and DMA bookkeeping. The APU is not reset here
+// in this implementation: that limitation matters for repeated runs.
 void Bus::reset()
 {
 	cart->reset();
@@ -149,6 +158,10 @@ void Bus::reset()
 // Single emulated master-clock tick, invoked by main.cpp's update loop.
 // The PPU/APU tick here; CPU ticks at a fraction of that rate, unless DMA
 // requires bus ownership. This is the scheduling handshake between devices.
+// One master PPU-rate system tick. PPU and APU advance every call;
+// the CPU advances on each third tick unless 256-byte OAM DMA owns the
+// bus. Finally sample audio and forward PPU NMI / mapper IRQ to CPU.
+// This scheduler is deliberately not a precise per-microoperation 6502.
 bool Bus::clock()
 {
 	// Clocking. The heart and soul of an emulator. The running
