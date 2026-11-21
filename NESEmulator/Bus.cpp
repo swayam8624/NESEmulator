@@ -29,6 +29,7 @@ Bus::~Bus()
 {
 }
 
+// TEACHING FUNCTION: Convert output audio sample rate to a time interval and establish the NES master-clock interval. The host may request 44.1 kHz, but emulation timing remains based on console cycles.
 void Bus::SetSampleFrequency(uint32_t sample_rate)
 {
 	dAudioTimePerSystemSample = 1.0 / (double)sample_rate;
@@ -118,6 +119,7 @@ uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 	return data;
 }
 
+// TEACHING FUNCTION: Connect loaded ROM state to bus/PPU. Cartridge owns PRG/CHR and mapper logic; this operation must precede meaningful instruction execution.
 void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 {
 	// Connects cartridge to both Main Bus and CPU Bus
@@ -125,6 +127,7 @@ void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 	ppu.ConnectCartridge(cartridge);
 }
 
+// TEACHING FUNCTION: Restore CPU/PPU/APU/mapper timing state for a fresh machine run. A reset is not a reload of ROM bytes; compare Cartridge::reset.
 void Bus::reset()
 {
 	cart->reset();
@@ -138,6 +141,7 @@ void Bus::reset()
 	dma_transfer = false;
 }
 
+// TEACHING FUNCTION: Advance console devices at their relative clock rates; handle OAM DMA stalls and coordinate audio sampling. main.cpp uses this to advance emulated time without directly clocking devices.
 bool Bus::clock()
 {
 	// Clocking. The heart and soul of an emulator. The running
