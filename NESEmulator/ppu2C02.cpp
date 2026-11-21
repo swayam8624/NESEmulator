@@ -108,6 +108,8 @@ ppu2C02::~ppu2C02()
 	delete sprPatternTable[1];
 }
 
+// Expose the emulated frame buffer to main.cpp's host renderer. A Sprite is
+// presentation storage; the PPU scanline pipeline is responsible for pixels.
 kairo::Sprite& ppu2C02::GetScreen()
 {
 	// Simply returns the current sprite holding the rendered screen
