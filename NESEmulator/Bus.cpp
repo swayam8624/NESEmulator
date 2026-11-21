@@ -40,6 +40,9 @@ void Bus::SetSampleFrequency(uint32_t sample_rate)
 	dAudioTimePerNESClock = 1.0 / 5369318.0; // PPU Clock Frequency
 }
 
+// CPU-originated store: a mapper gets first refusal, followed by mirrored RAM,
+// PPU/APU memory-mapped registers, OAM DMA and controller latches. Calls originate
+// from cpu6502.cpp and can ultimately mutate Cartridge/PPU/APU state.
 void Bus::cpuWrite(uint16_t addr, uint8_t data)
 {	
 	if (cart->cpuWrite(addr, data))
@@ -88,6 +91,9 @@ void Bus::cpuWrite(uint16_t addr, uint8_t data)
 	
 }
 
+// CPU-originated load: route by address to a cartridge mapper or onboard device.
+// bReadOnly exists for debugger reads; inspect each device's read semantics
+// before assuming an inspection is side-effect-free (controllers shift bits).
 uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 {
 	uint8_t data = 0x00;	
@@ -140,6 +146,9 @@ void Bus::reset()
 	dma_transfer = false;
 }
 
+// Single emulated master-clock tick, invoked by main.cpp's update loop.
+// The PPU/APU tick here; CPU ticks at a fraction of that rate, unless DMA
+// requires bus ownership. This is the scheduling handshake between devices.
 bool Bus::clock()
 {
 	// Clocking. The heart and soul of an emulator. The running
