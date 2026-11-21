@@ -19,6 +19,11 @@ module;
 module Kairo.NES;
 // Read the ROM header, select a supported mapper and allocate PRG/CHR. Header read lengths and
 // allocation bounds are correctness and security preconditions.
+// TEACHING API: Cartridge::Cartridge
+// Loads and interprets ROM metadata, allocates PRG/CHR storage, and chooses
+// a Mapper_* implementation. Bus and PPU later read only through this object.
+// IMPORTANT: current code does not consistently validate short reads, header
+// signature or unsupported mapper IDs; a valid flag is not yet a safety proof.
 Cartridge::Cartridge(const std::string& sFileName)
 {
 	// iNES Format Header
@@ -112,15 +117,26 @@ Cartridge::Cartridge(const std::string& sFileName)
 }
 
 
+// TEACHING API: Cartridge::~Cartridge
+// Destroys cartridge-owned buffers and shared mapper when the final owner exits.
+// No mapped host pointers should outlive this cartridge.
 Cartridge::~Cartridge()
 {
 }
 
+// TEACHING API: Cartridge::ImageValid
+// Reports the loader's current validity flag to main.cpp before cartridge
+// insertion. Present implementation can mark unsupported mapper IDs valid;
+// documented behavior must not be mistaken for safe input validation.
 bool Cartridge::ImageValid()
 {
 	return bImageValid;
 }
 
+// TEACHING API: Cartridge::cpuRead
+// For an address sent by Bus::cpuRead, ask the mapper for a PRG bank offset
+// or a mapper-supplied value (0xFFFFFFFF sentinel). On an unmapped address,
+// return false so the Bus can try other devices.
 bool Cartridge::cpuRead(uint16_t addr, uint8_t &data)
 {
 	uint32_t mapped_addr = 0;
@@ -142,6 +158,9 @@ bool Cartridge::cpuRead(uint16_t addr, uint8_t &data)
 		return false;
 }
 
+// TEACHING API: Cartridge::cpuWrite
+// For a Bus write, delegate mapper register/bank handling before optional
+// PRG-memory access. Some writes update mapper state rather than ROM bytes.
 bool Cartridge::cpuWrite(uint16_t addr, uint8_t data)
 {
 	uint32_t mapped_addr = 0;
@@ -163,6 +182,9 @@ bool Cartridge::cpuWrite(uint16_t addr, uint8_t data)
 		return false;
 }
 
+// TEACHING API: Cartridge::ppuRead
+// Read CHR bytes for pattern rendering using an offset supplied by the
+// active mapper. The caller is ppu2C02::ppuRead, not the host display.
 bool Cartridge::ppuRead(uint16_t addr, uint8_t & data)
 {
 	uint32_t mapped_addr = 0;
@@ -175,6 +197,9 @@ bool Cartridge::ppuRead(uint16_t addr, uint8_t & data)
 		return false;
 }
 
+// TEACHING API: Cartridge::ppuWrite
+// Accept CHR writes when the mapper permits them (for example CHR RAM).
+// The PPU drives this operation; bank mapping is mapper-controlled.
 bool Cartridge::ppuWrite(uint16_t addr, uint8_t data)
 {
 	uint32_t mapped_addr = 0;
@@ -188,6 +213,9 @@ bool Cartridge::ppuWrite(uint16_t addr, uint8_t data)
 }
 
 
+// TEACHING API: Cartridge::reset
+// Reset mapper registers/bank selection without re-reading or destroying the
+// ROM buffers. Called by Bus::reset.
 void Cartridge::reset()
 {
 	// Note: This does not reset the ROM contents,
@@ -196,6 +224,9 @@ void Cartridge::reset()
 		pMapper->reset();
 }
 
+// TEACHING API: Cartridge::Mirror
+// Resolve nametable mirroring: mapper override or hardware-mirroring value
+// from the ROM header. ppu2C02 uses this to map $2000-$2FFF tables.
 MIRROR Cartridge::Mirror()
 {
 	MIRROR m = pMapper->mirror();
@@ -213,6 +244,9 @@ MIRROR Cartridge::Mirror()
 	}
 }
 
+// TEACHING API: Cartridge::GetMapper
+// Expose the active mapper so the bus can inspect IRQ state and related
+// hardware signals. Callers must account for a null mapper on invalid ROMs.
 std::shared_ptr<Mapper> Cartridge::GetMapper()
 {
 	return pMapper;
