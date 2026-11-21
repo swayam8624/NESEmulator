@@ -104,6 +104,7 @@ void cpu6502::write(uint16_t a, uint8_t d)
 // allows the programmer to jump to a known and programmable location in the
 // memory to start executing from. Typically the programmer would set the value
 // at location 0xFFFC at compile time.
+// TEACHING FUNCTION: Reinitialize processor status/registers and load the reset vector through Bus memory mapping. Restart is observable in CPU state and instruction trace.
 void cpu6502::reset()
 {
 	// Get address to set program counter to
@@ -200,6 +201,7 @@ void cpu6502::nmi()
 }
 
 // Perform one clock cycles worth of emulation
+// TEACHING FUNCTION: Instruction-cycle engine: fetch opcode when no cycles remain, apply addressing mode and operation, and account for additional cycles. Bus::clock calls this on CPU clock slots.
 void cpu6502::clock()
 {
 	// Each instruction requires a variable number of clock cycles to execute.
@@ -526,6 +528,7 @@ uint8_t cpu6502::IZY()
 // 256, i.e. no far reaching memory fetch is required. "fetched"
 // is a variable global to the CPU, and is set by calling this 
 // function. It also returns it for convenience.
+// TEACHING FUNCTION: Resolve operand data after the selected addressing mode. Instructions should use this centralized fetch rather than bypassing Bus mapping.
 uint8_t cpu6502::fetch()
 {
 	if (!(lookup[opcode].addrmode == &cpu6502::IMP))
@@ -607,6 +610,7 @@ uint8_t cpu6502::fetch()
 //       Positive Number + Positive Number = Positive Result -> OK! No Overflow
 //       Negative Number + Negative Number = Negative Result -> OK! NO Overflow
 
+// TEACHING FUNCTION: Add-with-carry updates A and flags including carry/overflow; binary arithmetic correctness must be tested independently from games loading.
 uint8_t cpu6502::ADC()
 {
 	// Grab the data that we are adding to the accumulator
@@ -1416,6 +1420,7 @@ bool cpu6502::complete()
 // It is merely a convenience function to turn the binary instruction code into
 // human readable form. Its included as part of the emulator because it can take
 // advantage of many of the CPUs internal operations to do this.
+// TEACHING FUNCTION: Debugger helper: decode mapped program bytes for UI presentation, not CPU execution. Debug reads should avoid accidental hardware side effects.
 std::map<uint16_t, std::string> cpu6502::disassemble(uint16_t nStart, uint16_t nStop)
 {
 	uint32_t addr = nStart;
