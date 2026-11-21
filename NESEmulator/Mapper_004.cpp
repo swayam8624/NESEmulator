@@ -32,6 +32,9 @@ Mapper_004::~Mapper_004()
 {
 }
 
+// MMC3 CPU banking: translate ROM/RAM CPU addresses into the active PRG
+// bank or supply cartridge RAM data directly through the sentinel path.
+// Cartridge::cpuRead uses this return value before Bus handles main RAM/IO.
 bool Mapper_004::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 {
 	if (addr >= 0x6000 && addr <= 0x7FFF)
@@ -74,6 +77,9 @@ bool Mapper_004::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 	return false;
 }
 
+// MMC3 control writes can update bank registers, mirroring, PRG RAM and
+// IRQ reload/enable, not merely store a byte at the bus address. The
+// next mapper read can resolve the same CPU/PPU address differently.
 bool Mapper_004::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 {
 	if (addr >= 0x6000 && addr <= 0x7FFF)
@@ -195,6 +201,9 @@ bool Mapper_004::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 	return false;
 }
 
+// Map tile-pattern CHR reads using the selected 1 KB bank slots.
+// ppu2C02 delegates to Cartridge, which calls this method to select
+// vCHRMemory offsets while background/sprite tile fetches advance.
 bool Mapper_004::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 {
 	if (addr >= 0x0000 && addr <= 0x03FF)
@@ -288,6 +297,10 @@ void Mapper_004::irqClear()
 	bIRQActive = false;
 }
 
+// Approximate mapper scanline IRQ counter. ppu2C02 signals this method,
+// Mapper_004::irqState exposes pending IRQ, and Bus::clock forwards it
+// to the 6502's maskable irq() path. This is not an exact PPU A12 edge
+// timing model, so scanline-sensitive ROMs need separate validation.
 void Mapper_004::scanline()
 {
 	if (nIRQCounter == 0)
