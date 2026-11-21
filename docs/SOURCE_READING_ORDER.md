@@ -57,3 +57,37 @@ The current tree includes prebuilt executables and no CTest/Actions coverage. Tr
 - Preserve behavior during documentation-only edits; keep correctness changes in separate reviewed commits.
 - Link function names and tests where possible; mark claims as source-present, CI-observed, host-verified or research-evidenced.
 - License grants apply only to material for which the repository owner holds rights; third-party source, models, media and datasets keep their own notices.
+
+
+## Complete source-file inventory
+
+This ordered inventory supplements the **curated** reading path above. It includes every first-party code, build, script, shader and test file found in the current teaching branch at the time of indexing. Read the curated path **first**, then work down the categories below, following imports and calls when a dependent file precedes its implementation. External/vendor source, binaries, test ROMs and generated evidence are deliberately excluded from this source-learning checklist; their rights and verification are independent.
+
+### Entry points and build (2)
+
+1. [`CMakeLists.txt`](../CMakeLists.txt)
+2. [`NESEmulator/main.cpp`](../NESEmulator/main.cpp)
+
+### Interfaces and modules (2)
+
+1. [`NESEmulator/KairoNES.cppm`](../NESEmulator/KairoNES.cppm)
+2. [`NESEmulator/KairoPixelGameEngine.cppm`](../NESEmulator/KairoPixelGameEngine.cppm)
+
+### Implementation and other source (14)
+
+1. [`NESEmulator/apu2A03.cpp`](../NESEmulator/apu2A03.cpp)
+2. [`NESEmulator/Bus.cpp`](../NESEmulator/Bus.cpp)
+3. [`NESEmulator/Cartridge.cpp`](../NESEmulator/Cartridge.cpp)
+4. [`NESEmulator/cpu6502.cpp`](../NESEmulator/cpu6502.cpp)
+5. [`NESEmulator/Mapper_000.cpp`](../NESEmulator/Mapper_000.cpp)
+6. [`NESEmulator/Mapper_001.cpp`](../NESEmulator/Mapper_001.cpp)
+7. [`NESEmulator/Mapper_002.cpp`](../NESEmulator/Mapper_002.cpp)
+8. [`NESEmulator/Mapper_003.cpp`](../NESEmulator/Mapper_003.cpp)
+9. [`NESEmulator/Mapper_004.cpp`](../NESEmulator/Mapper_004.cpp)
+10. [`NESEmulator/Mapper_066.cpp`](../NESEmulator/Mapper_066.cpp)
+11. [`NESEmulator/Mapper.cpp`](../NESEmulator/Mapper.cpp)
+12. [`NESEmulator/ppu2C02.cpp`](../NESEmulator/ppu2C02.cpp)
+13. [`NESEmulator/testing2C02.cpp`](../NESEmulator/testing2C02.cpp)
+14. [`NESEmulator/testing6502.cpp`](../NESEmulator/testing6502.cpp)
+
+Source-index snapshot: 18 code/build/test files, 21 other tracked files (including excluded third-party, documentation and assets). Use a new tree audit before treating the index as current after subsequent source changes.
