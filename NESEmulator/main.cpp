@@ -1,3 +1,10 @@
+// SOURCE STUDY NOTE:
+// Application entry and visual debugger. This file imports the public Kairo.NES module, owns a Bus and
+// Cartridge, polls keyboard input into controller bits, advances emulation via Bus::clock(), and draws the
+// PPU's Sprite through KairoPixelGameEngine. The pixel engine supplies window, drawing and input APIs; it
+// is not the emulated NES PPU.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 #include <iostream>
 #include <sstream>
 #include <deque>
@@ -9,6 +16,8 @@ import Kairo.NES;
 #define kairo_PGE_APPLICATION
 #include "KairoPixelGameEngine.cppm"
 
+// The host GUI/debugger owns the emulated Bus and Cartridge; it is not
+// NES hardware. PGE callbacks translate input/time and display the PPU buffer.
 class Demo_KairoNES : public kairo::PixelGameEngine
 {
 public:
@@ -130,6 +139,8 @@ private:
 		return false;
 	}
 
+	// Host input -> NES controller bits. Bus::cpuRead later serializes the
+	// latched bits when game code reads CPU addresses 0x4016/0x4017.
 	void PollController()
 	{
 		nes.controller[0] = 0x00;

@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Base mapper extension points. Cartridge.cpp owns a Mapper instance selected from the ROM header.
+// cpuMap*/ppuMap* either translate addresses into PRG/CHR offsets or decline the address; derived
+// Mapper_*.cpp files implement specific cartridge hardware.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 module;
 #include <algorithm>
 #include <array>

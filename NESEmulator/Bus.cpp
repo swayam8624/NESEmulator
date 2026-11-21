@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// System integration and timing. Bus::cpuRead/cpuWrite route CPU addresses to RAM, PPU/APU registers,
+// controllers or Cartridge; Cartridge asks a Mapper to translate PRG addresses. Bus::clock clocks the
+// PPU/APU on system ticks, the CPU at a divided rate and DMA while CPU execution is suspended.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 module;
 #include <algorithm>
 #include <array>
@@ -28,12 +34,19 @@ Bus::~Bus()
 {
 }
 
+// Audio scheduling: convert requested host samples/second into a time
+// interval, while NES master ticks use the fixed PPU clock period. The
+// returned ready flag from Bus::clock tells the host when to consume output.
+// Caller must supply a nonzero rate; this function does not validate it.
 void Bus::SetSampleFrequency(uint32_t sample_rate)
 {
 	dAudioTimePerSystemSample = 1.0 / (double)sample_rate;
 	dAudioTimePerNESClock = 1.0 / 5369318.0; // PPU Clock Frequency
 }
 
+// CPU-originated store: a mapper gets first refusal, followed by mirrored RAM,
+// PPU/APU memory-mapped registers, OAM DMA and controller latches. Calls originate
+// from cpu6502.cpp and can ultimately mutate Cartridge/PPU/APU state.
 void Bus::cpuWrite(uint16_t addr, uint8_t data)
 {	
 	if (cart->cpuWrite(addr, data))
@@ -82,6 +95,9 @@ void Bus::cpuWrite(uint16_t addr, uint8_t data)
 	
 }
 
+// CPU-originated load: route by address to a cartridge mapper or onboard device.
+// bReadOnly exists for debugger reads; inspect each device's read semantics
+// before assuming an inspection is side-effect-free (controllers shift bits).
 uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 {
 	uint8_t data = 0x00;	
@@ -114,6 +130,9 @@ uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 	return data;
 }
 
+// Plug the same cartridge into the CPU-side Bus and PPU. The mapper then
+// handles PRG accesses from cpuRead/cpuWrite and CHR accesses from ppuRead/
+// ppuWrite. A null or unsupported Cartridge is not safe for clocking.
 void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 {
 	// Connects cartridge to both Main Bus and CPU Bus
@@ -121,6 +140,8 @@ void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 	ppu.ConnectCartridge(cartridge);
 }
 
+// Resets mapper/CPU/PPU and DMA bookkeeping. The APU is not reset here
+// in this implementation: that limitation matters for repeated runs.
 void Bus::reset()
 {
 	cart->reset();
@@ -134,6 +155,13 @@ void Bus::reset()
 	dma_transfer = false;
 }
 
+// Single emulated master-clock tick, invoked by main.cpp's update loop.
+// The PPU/APU tick here; CPU ticks at a fraction of that rate, unless DMA
+// requires bus ownership. This is the scheduling handshake between devices.
+// One master PPU-rate system tick. PPU and APU advance every call;
+// the CPU advances on each third tick unless 256-byte OAM DMA owns the
+// bus. Finally sample audio and forward PPU NMI / mapper IRQ to CPU.
+// This scheduler is deliberately not a precise per-microoperation 6502.
 bool Bus::clock()
 {
 	// Clocking. The heart and soul of an emulator. The running

@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE (integration and provenance):
+// Bundled host pixel/window/input layer. main.cpp uses its input and drawing APIs; ppu2C02.cpp uses
+// Sprite storage. This host dependency is not a simulation of NES hardware. Preserve upstream
+// copyright and license notices.
+// See docs/SOURCE_READING_ORDER.md and docs/THIRD_PARTY_AND_ROMS.md.
+
 #pragma region hello_world_example
 // O------------------------------------------------------------------------------O
 // | Example "Hello World" Program (main.cpp)                                     |

@@ -1,6 +1,12 @@
 # KairoNES
 
+> **Deep learning path:** [Instruction-to-pixel CPU/Bus/PPU/APU walkthrough](docs/CPU_BUS_PPU_APU_WALKTHROUGH.md) explains timing, address decoding, mapper banking, DMA, interrupts and current implementation limitations. See the [full source reading order](docs/SOURCE_READING_ORDER.md) and [third-party/ROM rights notice](docs/THIRD_PARTY_AND_ROMS.md).
+
 KairoNES is a C++23 NES emulator project built around C++ modules. The emulator core is exposed through `NESEmulator/KairoNES.cppm`, with implementation units in `.cpp` files.
+
+## Learn the source
+
+**Start with [the linked source reading order](docs/SOURCE_READING_ORDER.md)**. It explains the recommended file sequence, cross-module call paths, mapper families, PPU/CPU interactions, and focused exercises. Read [provenance and ROM redistribution notes](docs/THIRD_PARTY_AND_ROMS.md) before reusing or shipping bundled code or assets.
 
 ## Requirements
 
@@ -88,6 +94,10 @@ NESEmulator/Cartridge.cpp              iNES cartridge loader
 NESEmulator/Mapper_*.cpp               Mapper implementations
 NESEmulator/main.cpp                   App entry point and keyboard controls
 ```
+
+## Licensing and third-party components
+
+This project is published as source for study, but the repository currently contains bundled dependencies and ROM assets whose rights must be evaluated separately. Do not assume a blanket open-source license applies to the entire tree. See [the component/provenance guidance](docs/THIRD_PARTY_AND_ROMS.md). The new educational guides are separately licensed in [LICENSE-DOCS](LICENSE-DOCS).
 
 ## Notes
 

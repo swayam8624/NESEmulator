@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// MMC1 mapper: bank mapping controlled by writes into serial configuration registers. Cartridge.cpp
+// dispatches accesses here. Read the state changes alongside cpuMapRead/ppuMapRead to see how successive
+// CPU writes alter future ROM/CHR reads.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 module;
 #include <algorithm>
 #include <array>

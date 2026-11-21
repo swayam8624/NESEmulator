@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// NROM mapper: the baseline fixed-bank address translation. Cartridge.cpp creates it for mapper ID 0;
+// Bus.cpp accesses it indirectly through Cartridge::cpuRead/cpuWrite. Compare later bank-switching mappers
+// against this implementation.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 module;
 #include <algorithm>
 #include <array>

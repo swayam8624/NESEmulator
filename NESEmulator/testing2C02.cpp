@@ -1,3 +1,8 @@
+// SOURCE STUDY NOTE (integration and provenance):
+// Standalone PPU-focused experimental driver, not compiled into the active CMake game target.
+// Compare its output path with ppu2C02.cpp and main.cpp.
+// See docs/SOURCE_READING_ORDER.md and docs/THIRD_PARTY_AND_ROMS.md.
+
 #include <iostream>
 #include <sstream>
 

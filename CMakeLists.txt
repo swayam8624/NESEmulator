@@ -1,3 +1,9 @@
+# Teaching note: this file declares the C++23 build and its source-to-module relationship.
+# KairoNES.cppm exports the API consumed by main.cpp; the .cpp files implement its
+# CPU/PPU/APU, cartridge, mapper and bus types. The host pixel engine is included
+# from source and PNG/OpenGL/GLUT/Cocoa are host-side rendering dependencies.
+# Read docs/SOURCE_READING_ORDER.md before changing this target list.
+
 cmake_minimum_required(VERSION 4.0)
 
 project(NESEmulator LANGUAGES CXX)
