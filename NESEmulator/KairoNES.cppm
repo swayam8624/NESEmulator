@@ -1,3 +1,13 @@
+// TEACHING FILE GUIDE
+// Public C++23 module interface for the emulated console. This is the contract
+// shared by main.cpp and the module implementation units (Bus, CPU, PPU, APU,
+// Cartridge and Mapper). The declarations expose registers, memory, devices and
+// interfaces; executable behavior lives in corresponding .cpp files.
+// Study the Mapper virtual methods before Cartridge.cpp: they translate NES bus
+// addresses into bank offsets, not host memory addresses. The Bus coordinates
+// devices and the app should not directly implement hardware register behavior.
+// Further reading: docs/SOURCE_READING_ORDER.md
+
 module;
 #include <array>
 #include <cstdint>
