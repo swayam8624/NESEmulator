@@ -24,16 +24,24 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
+// TEACHING API: Mapper_004::Mapper_004
+// Allocate mapper-controlled cartridge RAM. PRG and CHR mapping tables are populated from register state.
+// Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
 Mapper_004::Mapper_004(uint8_t prgBanks, uint8_t chrBanks) : Mapper(prgBanks, chrBanks)
 {
 	vRAMStatic.resize(32 * 1024);
 }
 
 
+// TEACHING API: Mapper_004::~Mapper_004
+// Destruction follows virtual mapper ownership in Cartridge; this class does not own PRG/CHR ROM buffers.
 Mapper_004::~Mapper_004()
 {
 }
 
+// TEACHING API: Mapper_004::cpuMapRead
+// Handle cartridge RAM or resolve one of four 8 KiB PRG windows using the current bank table.
+// Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
 bool Mapper_004::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 {
 	if (addr >= 0x6000 && addr <= 0x7FFF)
@@ -76,6 +84,9 @@ bool Mapper_004::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 	return false;
 }
 
+// TEACHING API: Mapper_004::cpuMapWrite
+// Decode bank-select/data, mirroring, RAM protection and IRQ registers. This function updates pointers used by future CPU/PPU reads; the PRG-RAM-protect register remains TODO.
+// Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
 bool Mapper_004::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 {
 	if (addr >= 0x6000 && addr <= 0x7FFF)
@@ -197,6 +208,9 @@ bool Mapper_004::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 	return false;
 }
 
+// TEACHING API: Mapper_004::ppuMapRead
+// Map a 1 KiB CHR address window via the active CHR bank table, including inversion mode.
+// Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
 bool Mapper_004::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 {
 	if (addr >= 0x0000 && addr <= 0x03FF)
@@ -250,6 +264,9 @@ bool Mapper_004::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 	return false;
 }
 
+// TEACHING API: Mapper_004::ppuMapWrite
+// The current implementation does not provide a writable CHR path; validate CHR RAM compatibility.
+// Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
 bool Mapper_004::ppuMapWrite(uint16_t addr, uint32_t &mapped_addr)
 {
 	
@@ -257,6 +274,9 @@ bool Mapper_004::ppuMapWrite(uint16_t addr, uint32_t &mapped_addr)
 	return false;
 }
 
+// TEACHING API: Mapper_004::reset
+// Initialize bank table/registers and IRQ state to the implemented mapper's reset policy.
+// Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
 void Mapper_004::reset()
 {
 	nTargetRegister = 0x00;
@@ -280,16 +300,25 @@ void Mapper_004::reset()
 }
 
 
+// TEACHING API: Mapper_004::irqState
+// Expose whether the scanline IRQ latch is active so Bus can signal the CPU.
+// Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
 bool Mapper_004::irqState()
 {
 	return bIRQActive;
 }
 
+// TEACHING API: Mapper_004::irqClear
+// Clear the latched interrupt request after the CPU/bus handles it.
+// Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
 void Mapper_004::irqClear()
 {
 	bIRQActive = false;
 }
 
+// TEACHING API: Mapper_004::scanline
+// Update the IRQ counter on the PPU's scanline notification. Timing differs from cycle/A12-edge-accurate hardware and needs dedicated tests.
+// Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
 void Mapper_004::scanline()
 {
 	if (nIRQCounter == 0)
@@ -306,6 +335,9 @@ void Mapper_004::scanline()
 	
 }
 
+// TEACHING API: Mapper_004::mirror
+// Return MMC3 mirroring register state so PPU nametable reads/writes resolve correctly.
+// Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
 MIRROR Mapper_004::mirror()
 {
 	return mirrormode;
