@@ -1,3 +1,4 @@
+// TEACHING MAP: ROM AND MAPPER BOUNDARY: main.cpp constructs Cartridge; Bus.cpp asks it to translate memory access. Mapper_* implements bank switching; Cartridge owns PRG/CHR storage. Treat iNES input as untrusted: reject truncated data, malformed sizes and unsupported mapper IDs before declaring a cartridge valid. Current code has gaps; do not assume arbitrary ROM safety.
 module;
 #include <algorithm>
 #include <array>
@@ -16,6 +17,8 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
+// Read the ROM header, select a supported mapper and allocate PRG/CHR. Header read lengths and
+// allocation bounds are correctness and security preconditions.
 Cartridge::Cartridge(const std::string& sFileName)
 {
 	// iNES Format Header
