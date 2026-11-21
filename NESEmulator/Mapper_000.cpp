@@ -24,20 +24,31 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
+// TEACHING API: Mapper_000::Mapper_000
+// NROM has no bank-select registers: store ROM bank counts in the base Mapper.
+// Integration: NROM: fixed CPU PRG mapping and CHR mapping. Cartridge owns bytes; this class computes indices.
 Mapper_000::Mapper_000(uint8_t prgBanks, uint8_t chrBanks) : Mapper(prgBanks, chrBanks)
 {
 }
 
 
+// TEACHING API: Mapper_000::~Mapper_000
+// Destruction follows virtual mapper ownership in Cartridge; this class does not own PRG/CHR ROM buffers.
 Mapper_000::~Mapper_000()
 {
 }
 
+// TEACHING API: Mapper_000::reset
+// Fixed mapping requires no mutable bank-select state at reset.
+// Integration: NROM: fixed CPU PRG mapping and CHR mapping. Cartridge owns bytes; this class computes indices.
 void Mapper_000::reset()
 {
 
 }
 
+// TEACHING API: Mapper_000::cpuMapRead
+// Map CPU $8000-$FFFF to one mirrored 16 KiB PRG bank or two contiguous 16 KiB banks.
+// Integration: NROM: fixed CPU PRG mapping and CHR mapping. Cartridge owns bytes; this class computes indices.
 bool Mapper_000::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 {
 	// if PRGROM is 16KB
@@ -56,6 +67,9 @@ bool Mapper_000::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 	return false;
 }
 
+// TEACHING API: Mapper_000::cpuMapWrite
+// This implementation maps writes to PRG offsets even though NROM PRG is usually read-only; audit this against hardware before claiming compatibility.
+// Integration: NROM: fixed CPU PRG mapping and CHR mapping. Cartridge owns bytes; this class computes indices.
 bool Mapper_000::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 {
 	if (addr >= 0x8000 && addr <= 0xFFFF)
@@ -67,6 +81,9 @@ bool Mapper_000::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 	return false;
 }
 
+// TEACHING API: Mapper_000::ppuMapRead
+// Map PPU pattern-table addresses to CHR storage. Cartridge performs the actual byte read.
+// Integration: NROM: fixed CPU PRG mapping and CHR mapping. Cartridge owns bytes; this class computes indices.
 bool Mapper_000::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 {
 	// There is no mapping required for PPU
@@ -81,6 +98,9 @@ bool Mapper_000::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 	return false;
 }
 
+// TEACHING API: Mapper_000::ppuMapWrite
+// Only allow pattern-table writes with CHR RAM; CHR ROM must remain read-only.
+// Integration: NROM: fixed CPU PRG mapping and CHR mapping. Cartridge owns bytes; this class computes indices.
 bool Mapper_000::ppuMapWrite(uint16_t addr, uint32_t &mapped_addr)
 {
 	if (addr >= 0x0000 && addr <= 0x1FFF)
