@@ -1,3 +1,7 @@
+// TEACHING GUIDE — 6502 CPU visualization, not an automated conformance test.
+// Imports Kairo.NES and uses the PixelGameEngine window/debug drawing APIs.
+// Not compiled into the active CMake `game` target. See ../READING_ORDER.md.
+
 #include <iostream>
 #include <sstream>
 

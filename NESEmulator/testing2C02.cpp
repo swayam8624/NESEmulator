@@ -1,3 +1,7 @@
+// TEACHING GUIDE — PPU visualization, not an automated PPU timing test.
+// Imports Kairo.NES and uses PixelGameEngine to inspect patterns/palettes.
+// Not compiled into the active CMake `game` target. See ../READING_ORDER.md.
+
 #include <iostream>
 #include <sstream>
 
