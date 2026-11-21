@@ -1,3 +1,10 @@
+// TEACHING FILE GUIDE
+// PPU-focused diagnostic/program path for tiles, pattern tables and timing.
+// The PPU reads CHR and name tables through cartridge mapper rules, while
+// host drawing displays its screen output. Keep test fixtures separate from
+// the shipping game executable until they are wired into CTest.
+// See docs/SOURCE_READING_ORDER.md and the companion module declarations.
+
 #include <iostream>
 #include <sstream>
 
