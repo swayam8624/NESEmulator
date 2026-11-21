@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// System integration and timing. Bus::cpuRead/cpuWrite route CPU addresses to RAM, PPU/APU registers,
+// controllers or Cartridge; Cartridge asks a Mapper to translate PRG addresses. Bus::clock clocks the
+// PPU/APU on system ticks, the CPU at a divided rate and DMA while CPU execution is suspended.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 module;
 #include <algorithm>
 #include <array>
