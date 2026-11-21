@@ -173,7 +173,7 @@ private:
 
 	// PixelGameEngine calls this once at startup. Install the Cartridge into
 // Bus, reset chip state, and configure the audio sample rate.
-bool OnUserCreate() override
+	bool OnUserCreate() override
 	{
 		std::vector<std::string> romPaths;
 		if (!selectedRomPath.empty())
