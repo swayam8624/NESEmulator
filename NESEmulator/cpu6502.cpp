@@ -23,6 +23,9 @@ module;
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
 // Constructor
+// Each opcode entry connects three ideas: mnemonic, member-function pointer
+// for the operation, and member-function pointer for an addressing mode.
+// Bus::clock schedules this CPU; its read/write path returns to Bus.cpp.
 cpu6502::cpu6502()
 {
 	// Assembles the translation table. It's big, it's ugly, but it yields a convenient way
