@@ -22,6 +22,10 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
+// Read ROM metadata, allocate PRG/CHR storage and instantiate a mapper.
+// All later CPU/PPU accesses depend on this mapper selection; see Mapper_*.cpp.
+// Be careful: this loader assumes a valid header and a supported mapper;
+// hardening malformed-file handling is a separate runtime change.
 Cartridge::Cartridge(const std::string& sFileName)
 {
 	// iNES Format Header
@@ -124,6 +128,9 @@ bool Cartridge::ImageValid()
 	return bImageValid;
 }
 
+// Delegate CPU address translation to the mapper. A returned mapped offset
+// indexes PRG storage; the special sentinel means the mapper supplied data
+// directly (for example, cartridge-side RAM).
 bool Cartridge::cpuRead(uint16_t addr, uint8_t &data)
 {
 	uint32_t mapped_addr = 0;
