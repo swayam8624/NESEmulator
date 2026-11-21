@@ -21,6 +21,8 @@ import Kairo.NES;
 class Demo_KairoNES : public kairo::PixelGameEngine
 {
 public:
+	// TEACHING API: explicit Demo_KairoNES(
+	// Construct the host application with an optional cartridge path. The actual emulator core is Bus; this class owns input, drawing and debug UI.
 	explicit Demo_KairoNES(std::string romPath)
 		: selectedRomPath(std::move(romPath))
 	{
@@ -44,6 +46,8 @@ private:
 	// Support Utilities
 	std::map<uint16_t, std::string> mapAsm;
 
+	// TEACHING API: std::string hex(
+	// Format CPU/address bytes as fixed-width hexadecimal for the debugger. This helper never changes emulated state.
 	std::string hex(uint32_t n, uint8_t d)
 	{
 		std::string s(d, '0');
@@ -52,6 +56,8 @@ private:
 		return s;
 	};
 
+	// TEACHING API: void DrawRam(
+	// Visualize CPU-addressed memory using Bus::cpuRead(..., true), the debugger-safe path. It is not a second copy of NES RAM.
 	void DrawRam(int x, int y, uint16_t nAddr, int nRows, int nColumns)
 	{
 		int nRamX = x, nRamY = y;
@@ -68,6 +74,8 @@ private:
 		}
 	}
 
+	// TEACHING API: void DrawCpu(
+	// Display register/flag/PC state directly from cpu6502. Status fields are CPU architectural flags, not UI-only indicators.
 	void DrawCpu(int x, int y)
 	{
 		std::string status = "STATUS: ";
@@ -87,6 +95,8 @@ private:
 		DrawString(x , y + 50, "Stack P: $" + hex(nes.cpu.stkp, 4));
 	}
 
+	// TEACHING API: void DrawCode(
+	// Draw disassembled instructions around the program counter. cpu6502::disassemble supplies text; iterator bounds must be checked before decrementing.
 	void DrawCode(int x, int y, int nLines)
 	{
 		auto it_a = mapAsm.find(nes.cpu.pc);
@@ -119,6 +129,8 @@ private:
 		}
 	}
 
+	// TEACHING API: void DrawAudio(
+	// Plot recent APU channel samples using host pixel graphics. Visualization does not advance the APU.
 	void DrawAudio(int channel, int x, int y)
 	{
 		FillRect(x, y, 120, 120, kairo::BLACK);
@@ -130,6 +142,8 @@ private:
 		}
 	}
 
+	// TEACHING API: bool HeldAny(
+	// Map a list of host keyboard keys to a boolean input. These are host PixelGameEngine APIs, not NES key codes.
 	bool HeldAny(std::initializer_list<kairo::Key> keys) const
 	{
 		for (const auto key : keys)
@@ -139,6 +153,8 @@ private:
 		return false;
 	}
 
+	// TEACHING API: void PollController(
+	// Translate arrow/WASD and action buttons into NES controller bits. Bus latches/shifts this state through memory-mapped $4016/$4017.
 	void PollController()
 	{
 		nes.controller[0] = 0x00;
@@ -163,6 +179,8 @@ private:
 
 	static Demo_KairoNES* pInstance; // Static variable that will hold a pointer to "this"
 
+	// TEACHING API: static float SoundOut(
+	// Audio callback obtains the next Bus sample by advancing clock until ready. A separate realtime execution path currently uses frame stepping; do not claim both paths run together.
 	static float SoundOut(int nChannel, float fGlobalTime, float fTimeStep)
 	{
 		if (nChannel == 0)
@@ -174,6 +192,8 @@ private:
 			return 0.0f;
 	}
 
+	// TEACHING API: bool OnUserCreate()
+	// PixelGameEngine lifecycle callback: find a ROM, construct Cartridge, attach it through Bus and reset hardware before the first frame. ImageValid currently has known validation gaps.
 	bool OnUserCreate() override
 	{
 		std::vector<std::string> romPaths;
@@ -217,11 +237,15 @@ private:
 
 	// We must play nicely now with the sound hardware, so unload
 	// it when the application terminates
+	// TEACHING API: bool OnUserDestroy()
+	// Host shutdown callback. Device and ROM lifetime are managed by objects; this hook should release any future host resources explicitly.
 	bool OnUserDestroy() override
 	{
 		return true;
 	}
 
+	// TEACHING API: bool OnUserUpdate(
+	// Per-host-frame callback. Currently calls EmulatorUpdateWithoutAudio, so audio-synchronized mode is present but not the active update path.
 	bool OnUserUpdate(float fElapsedTime) override
 	{
 		EmulatorUpdateWithoutAudio(fElapsedTime);
@@ -232,6 +256,8 @@ private:
 	// perform stepping through code or frames. Essentially, it runs
 	// the emulation in real time now, so only accepts "controller" input
 	// and updates the display
+	// TEACHING API: bool EmulatorUpdateWithAudio(
+	// Alternative UI update path for audio-driven emulation; it is not invoked by the current OnUserUpdate and should be treated as an experimental path.
 	bool EmulatorUpdateWithAudio(float fElapsedTime)
 	{
 		// Sample audio channel output roughly once per frame
@@ -294,6 +320,8 @@ private:
 
 	// This performs emulation with no audio synchronisation, so it is just
 	// as before, in all the previous videos
+	// TEACHING API: bool EmulatorUpdateWithoutAudio(
+	// Active execution path: poll controller, process pause/reset/step input, clock Bus until PPU completes a frame, then draw its framebuffer. Host dt and console timing differ.
 	bool EmulatorUpdateWithoutAudio(float fElapsedTime)
 	{
 		PollController();
@@ -346,6 +374,8 @@ private:
 // Provide implementation for our static pointer
 Demo_KairoNES* Demo_KairoNES::pInstance = nullptr;
 
+// TEACHING API: int main(int argc, char** argv)
+// Process entry point: parse optional ROM path, configure display dimensions and start the PixelGameEngine event loop.
 int main(int argc, char** argv)
 {
 	const std::string romPath = argc > 1 ? argv[1] : "";
