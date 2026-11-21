@@ -1,3 +1,11 @@
+// TEACHING FILE GUIDE
+// NROM baseline mapper: a fixed PRG and CHR arrangement, useful for learning
+// before bank-switching mappers. Cartridge owns the byte arrays; this mapper
+// returns offsets for the Bus/PPU to access. Mirroring behavior affects PPU
+// nametables, while PRG bank count affects CPU address mirroring.
+// Compare emulator output with an NROM test ROM before adding other mappers.
+// Further reading: docs/SOURCE_READING_ORDER.md
+
 module;
 #include <algorithm>
 #include <array>
