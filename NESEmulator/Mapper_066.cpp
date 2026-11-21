@@ -23,15 +23,23 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
+// TEACHING API: Mapper_066::Mapper_066
+// Initialize PRG/CHR bank counts inherited from Mapper.
+// Integration: GxROM: CPU control register selects both a 32 KiB PRG window and an 8 KiB CHR bank.
 Mapper_066::Mapper_066(uint8_t prgBanks, uint8_t chrBanks) : Mapper(prgBanks, chrBanks)
 {
 }
 
 
+// TEACHING API: Mapper_066::~Mapper_066
+// Destruction follows virtual mapper ownership in Cartridge; this class does not own PRG/CHR ROM buffers.
 Mapper_066::~Mapper_066()
 {
 }
 
+// TEACHING API: Mapper_066::cpuMapRead
+// Map CPU $8000-$FFFF through the selected 32 KiB PRG ROM bank.
+// Integration: GxROM: CPU control register selects both a 32 KiB PRG window and an 8 KiB CHR bank.
 bool Mapper_066::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 {
 	if (addr >= 0x8000 && addr <= 0xFFFF)
@@ -43,6 +51,9 @@ bool Mapper_066::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 		return false;
 }
 
+// TEACHING API: Mapper_066::cpuMapWrite
+// Decode CHR bank from low bits and PRG bank from high bits; this is a bank command, not a ROM data write.
+// Integration: GxROM: CPU control register selects both a 32 KiB PRG window and an 8 KiB CHR bank.
 bool Mapper_066::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 {
 	if (addr >= 0x8000 && addr <= 0xFFFF)
@@ -55,6 +66,9 @@ bool Mapper_066::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 	return false;
 }
 
+// TEACHING API: Mapper_066::ppuMapRead
+// Map pattern-table bytes into the selected 8 KiB CHR bank.
+// Integration: GxROM: CPU control register selects both a 32 KiB PRG window and an 8 KiB CHR bank.
 bool Mapper_066::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 {
 	if (addr < 0x2000)
@@ -66,11 +80,17 @@ bool Mapper_066::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 		return false;
 }
 
+// TEACHING API: Mapper_066::ppuMapWrite
+// No writable pattern-memory mapping is implemented for this mapper.
+// Integration: GxROM: CPU control register selects both a 32 KiB PRG window and an 8 KiB CHR bank.
 bool Mapper_066::ppuMapWrite(uint16_t addr, uint32_t &mapped_addr)
 {
 	return false;
 }
 
+// TEACHING API: Mapper_066::reset
+// Restore CHR/PRG selectors to zero.
+// Integration: GxROM: CPU control register selects both a 32 KiB PRG window and an 8 KiB CHR bank.
 void Mapper_066::reset()
 {
 	nCHRBankSelect = 0;
