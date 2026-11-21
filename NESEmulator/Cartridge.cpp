@@ -1,3 +1,10 @@
+// TEACHING GUIDE — NESEmulator/Cartridge.cpp
+// ROM and mapper ownership: reads iNES/NES2 header metadata, allocates PRG/CHR buffers, 
+// selects Mapper_*, and supplies byte reads/writes to CPU/PPU callers after mapper address 
+// translation. Unsupported/truncated-image validation requires future hardening.
+// Read ../READING_ORDER.md for the cross-file call graph and API glossary.
+// Explanatory comments do not alter source ownership or license terms.
+
 module;
 #include <algorithm>
 #include <array>
@@ -16,6 +23,9 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
+// ROM parsing and mapper selection. ImageValid() currently does not prove
+// an entire image is well formed; unsupported mapper IDs can leave pMapper
+// unset. Do not use this parser as a security boundary for untrusted files.
 Cartridge::Cartridge(const std::string& sFileName)
 {
 	// iNES Format Header
@@ -118,6 +128,8 @@ bool Cartridge::ImageValid()
 	return bImageValid;
 }
 
+// PRG read: ask Mapper::cpuMapRead for a physical offset or mapper-owned
+// read result. The Bus invokes this for cartridge-visible CPU addresses.
 bool Cartridge::cpuRead(uint16_t addr, uint8_t &data)
 {
 	uint32_t mapped_addr = 0;
@@ -160,6 +172,8 @@ bool Cartridge::cpuWrite(uint16_t addr, uint8_t data)
 		return false;
 }
 
+// CHR read: the PPU fetches pattern bytes through the cartridge's mapper;
+// the mapper selects the bank and the cartridge owns the byte storage.
 bool Cartridge::ppuRead(uint16_t addr, uint8_t & data)
 {
 	uint32_t mapped_addr = 0;

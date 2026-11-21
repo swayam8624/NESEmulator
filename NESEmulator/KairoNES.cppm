@@ -1,3 +1,10 @@
+// TEACHING GUIDE — NESEmulator/KairoNES.cppm
+// Public C++23 module interface: declares the emulated CPU, PPU, APU, cartridges, mappers, 
+// and Bus; implementation units all belong to Kairo.NES. Frontend imports this contract from 
+// main.cpp, while CMake compiles it as a CXX_MODULES file set.
+// Read ../READING_ORDER.md for the cross-file call graph and API glossary.
+// Explanatory comments do not alter source ownership or license terms.
+
 module;
 #include <array>
 #include <cstdint>
@@ -10,6 +17,9 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 
+// The exported module is the public API boundary; implementations live in the
+// same named module in cpu6502.cpp, ppu2C02.cpp, apu2A03.cpp, Bus.cpp,
+// Cartridge.cpp, and Mapper_*.cpp. Clients use `import Kairo.NES;`.
 export module Kairo.NES;
 
 export {
