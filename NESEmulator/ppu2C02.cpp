@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Video hardware model. The Bus exposes PPU registers through cpuRead/cpuWrite and clocks this PPU per
+// system tick. Fetches can reach Cartridge and Mapper for CHR data. GetScreen() returns a pixel-engine
+// Sprite that main.cpp presents; do not confuse host drawing with PPU hardware emulation.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 module;
 #include <algorithm>
 #include <array>
