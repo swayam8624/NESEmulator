@@ -1,3 +1,10 @@
+// TEACHING FILE GUIDE
+// GxROM-style PRG/CHR bank selection. A single selection register maps
+// distinct code and pattern banks. Cartridge still performs byte access;
+// this module supplies mapping arithmetic only. Test boundary bank values
+// and ensure resulting PRG/CHR indices remain inside allocated memory.
+// See docs/SOURCE_READING_ORDER.md and the companion module declarations.
+
 module;
 #include <algorithm>
 #include <array>
