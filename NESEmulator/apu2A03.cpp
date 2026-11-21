@@ -38,6 +38,9 @@ apu2A03::~apu2A03()
 {
 }
 
+// Receive CPU-mapped sound registers via Bus::cpuWrite. Writing pulse
+// duty/envelope/sweep/timer settings changes the oscillator state used
+// by clock(), but does not directly emit a host audio sample.
 void apu2A03::cpuWrite(uint16_t addr, uint8_t data)
 {
 	switch (addr)
@@ -157,6 +160,9 @@ void apu2A03::cpuWrite(uint16_t addr, uint8_t data)
 	}
 }
 
+// CPU-visible APU status port ($4015). Current implementation leaves
+// per-channel status bit assembly commented out; this is incomplete
+// emulation, so do not use it as reference APU-status behavior.
 uint8_t apu2A03::cpuRead(uint16_t addr)
 {
 	uint8_t data = 0x00;
@@ -171,6 +177,9 @@ uint8_t apu2A03::cpuRead(uint16_t addr)
 	return data;
 }
 
+// Advance frame sequencer and channel envelopes/length/sweep/timers on
+// emulated APU ticks. Bus::clock independently resamples its resulting
+// waveform at the requested host sample frequency.
 void apu2A03::clock()
 {
 	// Depending on the frame count, we set a flag to tell 
@@ -310,6 +319,9 @@ void apu2A03::clock()
 	clock_counter++;
 }
 
+// Mix current oscillator channel amplitudes for host audio consumption.
+// Raw/processed modes use different mixing formulas; Bus::clock invokes
+// this when its sample-period accumulator is ready.
 double apu2A03::GetOutputSample()
 {
 	if (bUseRawMode)
@@ -325,6 +337,9 @@ double apu2A03::GetOutputSample()
 	}
 }
 
+// Currently empty: audio generator state is not reinitialized here.
+// A complete reset should be specified and tested before calling this
+// implementation hardware-accurate across repeated game sessions.
 void apu2A03::reset()
 {
 }
