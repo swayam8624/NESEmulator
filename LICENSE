@@ -1,0 +1,27 @@
+MIT License — original contributions only
+
+Copyright (c) 2026 Swayam Singal, for original contributions made by this copyright holder.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of software or documentation that is an original contribution by the above
+copyright holder (the "Software"), to deal in that Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of that Software, and to permit
+persons to whom that Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of that Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+IMPORTANT SCOPE NOTE: The terms above do not relicense third-party source,
+adapted code, libraries, ROM images or game assets. See THIRD_PARTY_NOTICES.md.
+Until provenance is verified, do not assume the entire emulator is licensed
+exclusively under the above MIT grant.
