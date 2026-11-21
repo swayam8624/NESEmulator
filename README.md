@@ -1,5 +1,7 @@
 # KairoNES
 
+> **Deep learning path:** [Instruction-to-pixel CPU/Bus/PPU/APU walkthrough](docs/CPU_BUS_PPU_APU_WALKTHROUGH.md) explains timing, address decoding, mapper banking, DMA, interrupts and current implementation limitations. See the [full source reading order](docs/SOURCE_READING_ORDER.md) and [third-party/ROM rights notice](docs/THIRD_PARTY_AND_ROMS.md).
+
 KairoNES is a C++23 NES emulator project built around C++ modules. The emulator core is exposed through `NESEmulator/KairoNES.cppm`, with implementation units in `.cpp` files.
 
 ## Learn the source
