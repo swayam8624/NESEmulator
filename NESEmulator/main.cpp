@@ -1,3 +1,12 @@
+// TEACHING FILE GUIDE
+// Host application and debugging UI. Imports Kairo.NES, loads a ROM cartridge,
+// maps keyboard state to NES controller bits, advances the Bus, and draws the
+// CPU/disassembly/PPU views through KairoPixelGameEngine.
+// OnUserCreate establishes device/cartridge state; OnUserUpdate is the frame
+// boundary; audio callbacks may involve another thread. Distinguish real-time
+// display cadence from emulated CPU/PPU cycles. See Bus.cpp and ppu2C02.cpp.
+// Further reading: docs/SOURCE_READING_ORDER.md
+
 #include <iostream>
 #include <sstream>
 #include <deque>
