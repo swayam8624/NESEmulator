@@ -10,34 +10,34 @@ Read each phase in order. Every link goes to a source file or directory in this 
 
 ## 1. Boot and public API
 
-1. [`README.md`](README.md)
-2. [`CMakeLists.txt`](CMakeLists.txt)
-3. [`NESEmulator/KairoNES.cppm`](NESEmulator/KairoNES.cppm)
-4. [`NESEmulator/main.cpp`](NESEmulator/main.cpp)
+1. [`README.md`](../README.md)
+2. [`CMakeLists.txt`](../CMakeLists.txt)
+3. [`NESEmulator/KairoNES.cppm`](../NESEmulator/KairoNES.cppm)
+4. [`NESEmulator/main.cpp`](../NESEmulator/main.cpp)
 
 ## 2. Cartridge and memory
 
-1. [`NESEmulator/Cartridge.cpp`](NESEmulator/Cartridge.cpp)
-2. [`NESEmulator/Mapper.cpp`](NESEmulator/Mapper.cpp)
-3. [`NESEmulator/Mapper_000.cpp`](NESEmulator/Mapper_000.cpp)
-4. [`NESEmulator/Mapper_001.cpp`](NESEmulator/Mapper_001.cpp)
-5. [`NESEmulator/Mapper_002.cpp`](NESEmulator/Mapper_002.cpp)
-6. [`NESEmulator/Mapper_003.cpp`](NESEmulator/Mapper_003.cpp)
-7. [`NESEmulator/Mapper_004.cpp`](NESEmulator/Mapper_004.cpp)
-8. [`NESEmulator/Mapper_066.cpp`](NESEmulator/Mapper_066.cpp)
+1. [`NESEmulator/Cartridge.cpp`](../NESEmulator/Cartridge.cpp)
+2. [`NESEmulator/Mapper.cpp`](../NESEmulator/Mapper.cpp)
+3. [`NESEmulator/Mapper_000.cpp`](../NESEmulator/Mapper_000.cpp)
+4. [`NESEmulator/Mapper_001.cpp`](../NESEmulator/Mapper_001.cpp)
+5. [`NESEmulator/Mapper_002.cpp`](../NESEmulator/Mapper_002.cpp)
+6. [`NESEmulator/Mapper_003.cpp`](../NESEmulator/Mapper_003.cpp)
+7. [`NESEmulator/Mapper_004.cpp`](../NESEmulator/Mapper_004.cpp)
+8. [`NESEmulator/Mapper_066.cpp`](../NESEmulator/Mapper_066.cpp)
 
 ## 3. Execution hardware
 
-1. [`NESEmulator/Bus.cpp`](NESEmulator/Bus.cpp)
-2. [`NESEmulator/cpu6502.cpp`](NESEmulator/cpu6502.cpp)
-3. [`NESEmulator/ppu2C02.cpp`](NESEmulator/ppu2C02.cpp)
-4. [`NESEmulator/apu2A03.cpp`](NESEmulator/apu2A03.cpp)
+1. [`NESEmulator/Bus.cpp`](../NESEmulator/Bus.cpp)
+2. [`NESEmulator/cpu6502.cpp`](../NESEmulator/cpu6502.cpp)
+3. [`NESEmulator/ppu2C02.cpp`](../NESEmulator/ppu2C02.cpp)
+4. [`NESEmulator/apu2A03.cpp`](../NESEmulator/apu2A03.cpp)
 
 ## 4. Host rendering and diagnostics
 
-1. [`NESEmulator/KairoPixelGameEngine.cppm`](NESEmulator/KairoPixelGameEngine.cppm)
-2. [`NESEmulator/testing6502.cpp`](NESEmulator/testing6502.cpp)
-3. [`NESEmulator/testing2C02.cpp`](NESEmulator/testing2C02.cpp)
+1. [`NESEmulator/KairoPixelGameEngine.cppm`](../NESEmulator/KairoPixelGameEngine.cppm)
+2. [`NESEmulator/testing6502.cpp`](../NESEmulator/testing6502.cpp)
+3. [`NESEmulator/testing2C02.cpp`](../NESEmulator/testing2C02.cpp)
 
 ## End-to-end interaction map
 
