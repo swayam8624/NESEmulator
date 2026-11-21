@@ -16,6 +16,8 @@ import Kairo.NES;
 #define kairo_PGE_APPLICATION
 #include "KairoPixelGameEngine.cppm"
 
+// The host GUI/debugger owns the emulated Bus and Cartridge; it is not
+// NES hardware. PGE callbacks translate input/time and display the PPU buffer.
 class Demo_KairoNES : public kairo::PixelGameEngine
 {
 public:
@@ -137,6 +139,8 @@ private:
 		return false;
 	}
 
+	// Host input -> NES controller bits. Bus::cpuRead later serializes the
+	// latched bits when game code reads CPU addresses 0x4016/0x4017.
 	void PollController()
 	{
 		nes.controller[0] = 0x00;
