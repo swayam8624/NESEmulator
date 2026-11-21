@@ -1,5 +1,7 @@
 # Source reading guide — KairoNES
 
+For a full narrative following one instruction through RAM/mappers, PPU registers, DMA, pixels and sound—including source-grounded limitations—read [CPU_BUS_PPU_APU_WALKTHROUGH.md](CPU_BUS_PPU_APU_WALKTHROUGH.md).
+
 This is a **teaching path**, not a build order. Read the links in sequence, then trace a CPU read, a PPU register write, and a whole emulated frame through the source. The CMake target compiles all the files together; C++ module declarations live in `KairoNES.cppm`, and the corresponding `.cpp` files provide implementations.
 
 ## 1. Entry point and system architecture
