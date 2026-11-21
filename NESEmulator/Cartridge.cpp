@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// ROM file and mapper boundary. The constructor decodes the cartridge header and selects a Mapper
+// implementation. cpuRead/cpuWrite and ppuRead/ppuWrite delegate address translation to the mapper before
+// touching PRG/CHR buffers. This bridges Bus.cpp and ppu2C02.cpp with Mapper_*.cpp.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 module;
 #include <algorithm>
 #include <array>
