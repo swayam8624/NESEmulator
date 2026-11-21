@@ -1,3 +1,11 @@
+// TEACHING FILE GUIDE
+// MMC1-style serial register/bank switching path. The CPU writes register data
+// through Bus -> Cartridge -> this mapper; bank configuration changes later
+// CPU PRG and PPU CHR address resolution. Reset and mirroring transitions are
+// important compatibility cases.
+// Read Mapper_000 first, then test shift-register writes and CHR/PRG modes.
+// Further reading: docs/SOURCE_READING_ORDER.md
+
 module;
 #include <algorithm>
 #include <array>
