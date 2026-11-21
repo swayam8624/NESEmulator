@@ -1,3 +1,10 @@
+// SOURCE STUDY NOTE:
+// Application entry and visual debugger. This file imports the public Kairo.NES module, owns a Bus and
+// Cartridge, polls keyboard input into controller bits, advances emulation via Bus::clock(), and draws the
+// PPU's Sprite through KairoPixelGameEngine. The pixel engine supplies window, drawing and input APIs; it
+// is not the emulated NES PPU.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 #include <iostream>
 #include <sstream>
 #include <deque>
