@@ -1,3 +1,10 @@
+// TEACHING FILE GUIDE
+// CNROM-style CHR switching. CPU writes choose which graphics bank the PPU
+// can read through Cartridge. PRG addressing remains simpler than MMC
+// families. Rendering artifacts may arise from wrong PPU CHR bank selection
+// rather than a bug in ppu2C02 itself.
+// See docs/SOURCE_READING_ORDER.md and the companion module declarations.
+
 module;
 #include <algorithm>
 #include <array>
