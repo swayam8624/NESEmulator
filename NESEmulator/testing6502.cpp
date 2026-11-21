@@ -1,3 +1,10 @@
+// TEACHING FILE GUIDE
+// CPU diagnostic harness exercising register flags/instructions; compare
+// with the main emulator loop in main.cpp and machine behavior in cpu6502.cpp.
+// Treat deterministic instruction traces and clock counts as regression
+// evidence. A visual game boot is a weaker CPU correctness test.
+// See docs/SOURCE_READING_ORDER.md and the companion module declarations.
+
 #include <iostream>
 #include <sstream>
 
