@@ -1,3 +1,11 @@
+// TEACHING FILE GUIDE
+// NES Audio Processing Unit channel and register emulation. The bus forwards
+// APU address writes here; audio samples eventually feed the host audio system
+// in main.cpp. Hardware frame sequencing, channel envelopes and CPU-cycle
+// relationship matter for audible behavior and compatibility.
+// The README labels this path partial/basic: do not claim full NES audio fidelity.
+// Further reading: docs/SOURCE_READING_ORDER.md
+
 module;
 #include <algorithm>
 #include <array>
