@@ -23,15 +23,23 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
+// TEACHING API: Mapper_003::Mapper_003
+// Initialize mapper bank counts; CHR selection starts in its reset state.
+// Integration: CNROM: fixed PRG mapping with a CPU-controlled switchable CHR graphics bank.
 Mapper_003::Mapper_003(uint8_t prgBanks, uint8_t chrBanks) : Mapper(prgBanks, chrBanks)
 {
 }
 
 
+// TEACHING API: Mapper_003::~Mapper_003
+// Destruction follows virtual mapper ownership in Cartridge; this class does not own PRG/CHR ROM buffers.
 Mapper_003::~Mapper_003()
 {
 }
 
+// TEACHING API: Mapper_003::cpuMapRead
+// Map 16 KiB PRG with mirroring or 32 KiB PRG directly; other bank counts need explicit validation.
+// Integration: CNROM: fixed PRG mapping with a CPU-controlled switchable CHR graphics bank.
 bool Mapper_003::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 {
 	if (addr >= 0x8000 && addr <= 0xFFFF)
@@ -46,6 +54,9 @@ bool Mapper_003::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 		return false;
 }
 
+// TEACHING API: Mapper_003::cpuMapWrite
+// Latch low CHR bank-select bits from writes to the cartridge register range; avoid mutating PRG ROM.
+// Integration: CNROM: fixed PRG mapping with a CPU-controlled switchable CHR graphics bank.
 bool Mapper_003::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 {
 	if (addr >= 0x8000 && addr <= 0xFFFF)
@@ -58,6 +69,9 @@ bool Mapper_003::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 	return false;
 }
 
+// TEACHING API: Mapper_003::ppuMapRead
+// Offset a PPU pattern-table read into the selected 8 KiB CHR bank.
+// Integration: CNROM: fixed PRG mapping with a CPU-controlled switchable CHR graphics bank.
 bool Mapper_003::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 {
 	if (addr < 0x2000)
@@ -69,11 +83,17 @@ bool Mapper_003::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 		return false;
 }
 
+// TEACHING API: Mapper_003::ppuMapWrite
+// Return unhandled for CHR ROM; no writable CHR path is implemented here.
+// Integration: CNROM: fixed PRG mapping with a CPU-controlled switchable CHR graphics bank.
 bool Mapper_003::ppuMapWrite(uint16_t addr, uint32_t &mapped_addr)
 {
 	return false;
 }
 
+// TEACHING API: Mapper_003::reset
+// Return CHR selector to the initial bank.
+// Integration: CNROM: fixed PRG mapping with a CPU-controlled switchable CHR graphics bank.
 void Mapper_003::reset()
 {
 	nCHRBankSelect = 0;
