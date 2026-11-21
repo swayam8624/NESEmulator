@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Public C++23 module interface. Types exported here are implemented in Bus.cpp, cpu6502.cpp, ppu2C02.cpp,
+// apu2A03.cpp, Cartridge.cpp and Mapper_*.cpp. Imports in main.cpp make these declarations visible. Keep
+// API changes synchronized with their implementation units.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 module;
 #include <array>
 #include <cstdint>
