@@ -1,3 +1,8 @@
+// SOURCE STUDY NOTE (integration and provenance):
+// Standalone CPU-focused experimental driver, not compiled into the active CMake game target.
+// Compare its CPU setup with main.cpp and its Bus usage with cpu6502.cpp.
+// See docs/SOURCE_READING_ORDER.md and docs/THIRD_PARTY_AND_ROMS.md.
+
 #include <iostream>
 #include <sstream>
 
