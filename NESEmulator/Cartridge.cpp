@@ -123,6 +123,9 @@ Cartridge::~Cartridge()
 {
 }
 
+// Returns loader's validity flag, not proof of mapper support. In this
+// implementation an opened ROM can set bImageValid even if switch(nMapperID)
+// did not construct pMapper; validate pMapper before dereferencing it.
 bool Cartridge::ImageValid()
 {
 	return bImageValid;
@@ -131,6 +134,9 @@ bool Cartridge::ImageValid()
 // Delegate CPU address translation to the mapper. A returned mapped offset
 // indexes PRG storage; the special sentinel means the mapper supplied data
 // directly (for example, cartridge-side RAM).
+// Mapper decides whether it owns this CPU address. A normal mapped offset
+// indexes PRG storage; 0xFFFFFFFF signals data was produced inside mapper
+// memory (e.g. PRG RAM) instead of normal PRG ROM. Bus sees only the byte.
 bool Cartridge::cpuRead(uint16_t addr, uint8_t &data)
 {
 	uint32_t mapped_addr = 0;
@@ -152,6 +158,9 @@ bool Cartridge::cpuRead(uint16_t addr, uint8_t &data)
 		return false;
 }
 
+// CPU write can program mapper registers, internal cartridge RAM, or a
+// mapped PRG address. Distinguish mapper-handled sentinel writes from
+// physical PRG storage updates; bank-switching is not ordinary ROM mutation.
 bool Cartridge::cpuWrite(uint16_t addr, uint8_t data)
 {
 	uint32_t mapped_addr = 0;
@@ -173,6 +182,9 @@ bool Cartridge::cpuWrite(uint16_t addr, uint8_t data)
 		return false;
 }
 
+// PPU CHR fetch: the mapper selects a CHR bank and yields the mapped
+// address for pattern-table data. PPU name tables and palettes are handled
+// by ppu2C02 when this method declines the bus transaction.
 bool Cartridge::ppuRead(uint16_t addr, uint8_t & data)
 {
 	uint32_t mapped_addr = 0;
@@ -185,6 +197,9 @@ bool Cartridge::ppuRead(uint16_t addr, uint8_t & data)
 		return false;
 }
 
+// CHR write (meaningful for cartridges with CHR RAM); mapper controls
+// whether and where the value lands. The PPU also has separate internal
+// name-table/palette memory outside this cartridge responsibility.
 bool Cartridge::ppuWrite(uint16_t addr, uint8_t data)
 {
 	uint32_t mapped_addr = 0;
@@ -206,6 +221,9 @@ void Cartridge::reset()
 		pMapper->reset();
 }
 
+// PPU nametable mirroring is either fixed by iNES board flags or
+// overridden dynamically by a mapper. ppu2C02::ppuRead/ppuWrite use
+// this result to select physical nametable storage.
 MIRROR Cartridge::Mirror()
 {
 	MIRROR m = pMapper->mirror();
