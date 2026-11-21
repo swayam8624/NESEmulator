@@ -33,7 +33,10 @@ Mapper_000::Mapper_000(uint8_t prgBanks, uint8_t chrBanks) : Mapper(prgBanks, ch
 
 
 // TEACHING API: Mapper_000::~Mapper_000
-// Destruction follows virtual mapper ownership in Cartridge; this class does not own PRG/CHR ROM buffers.
+// Cartridge currently stores make_shared<Derived> objects as shared_ptr<Mapper>;
+// the shared control block retains the concrete deleter. Mapper's base
+// destructor is not virtual, so deleting a derived object through a raw
+// Mapper* would be unsafe. Mapper instances do not own PRG/CHR ROM bytes.
 Mapper_000::~Mapper_000()
 {
 }
