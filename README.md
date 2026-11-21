@@ -94,3 +94,12 @@ NESEmulator/main.cpp                   App entry point and keyboard controls
 - The active build target is `game`.
 - The emulator currently starts in running mode.
 - Audio is not the frame driver; emulation advances from the application update loop.
+
+
+## Learn this repository from source
+
+The [Teaching source map](docs/SOURCE_READING_ORDER.md) gives a linked reading sequence, subsystem interactions, public API boundaries, and verification questions. Begin with the public contract and entry point, trace one real operation through its implementation, and use the linked tests to distinguish expected behavior from observed evidence.
+
+**Current scope and limitations.** This is an educational emulator implementation, not a certification of NES compatibility. The current APU is partial and no automated CTest/Actions verification is published. Obtain ROMs legally. The emulator includes adapted/third-party material; a repository license cannot override upstream copyright.
+
+**Learning and reuse.** Project-authored code is intended for study, modification and further development under the repository's applicable license. See [LICENSE](LICENSE) where present. Third-party libraries, borrowed source, assets, test data, models and media remain under their own terms; do not treat a top-level license as permission to redistribute restricted content.
