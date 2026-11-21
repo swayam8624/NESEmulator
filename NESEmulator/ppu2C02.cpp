@@ -232,6 +232,7 @@ kairo::Sprite& ppu2C02::GetNameTable(uint8_t i)
 }
 
 
+// TEACHING FUNCTION: CPU-facing register API, reached through Bus::cpuRead. Reads may update PPU internal latches/buffers; debugger-only access must preserve observable state.
 uint8_t ppu2C02::cpuRead(uint16_t addr, bool rdonly)
 {
 	uint8_t data = 0x00;
@@ -335,6 +336,7 @@ uint8_t ppu2C02::cpuRead(uint16_t addr, bool rdonly)
 	return data;
 }
 
+// TEACHING FUNCTION: CPU register writes configure scrolling, OAM, control and video-memory access. The Bus mirrors the physical eight-register address range.
 void ppu2C02::cpuWrite(uint16_t addr, uint8_t data)
 {
 	switch (addr)
@@ -406,6 +408,7 @@ void ppu2C02::cpuWrite(uint16_t addr, uint8_t data)
 	}
 }
 
+// TEACHING FUNCTION: PPU-side pattern/name/palette memory accessor; cartridge mapper and mirroring rules determine where a video address resolves.
 uint8_t ppu2C02::ppuRead(uint16_t addr, bool rdonly)
 {
 	uint8_t data = 0x00;
@@ -543,6 +546,7 @@ void ppu2C02::reset()
 	odd_frame = false;
 }
 
+// TEACHING FUNCTION: Advance scanline and dot-level rendering pipelines. Produces frame pixels and NMI-related state consumed by the Bus and host display.
 void ppu2C02::clock()
 {
 	// As we progress through scanlines and cycles, the PPU is effectively
