@@ -1,3 +1,8 @@
+// SOURCE STUDY NOTE (integration and provenance):
+// GxROM mapper: CPU writes select PRG and CHR banks. The mapper translates addresses while
+// Cartridge.cpp owns storage; Bus.cpp and ppu2C02.cpp need not know how the banks are laid out.
+// See docs/SOURCE_READING_ORDER.md and docs/THIRD_PARTY_AND_ROMS.md.
+
 module;
 #include <algorithm>
 #include <array>
