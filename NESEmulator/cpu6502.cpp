@@ -26,6 +26,8 @@ module;
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
 // Constructor
+// TEACHING API: cpu6502::cpu6502
+// Build the 256-entry opcode table: instruction mnemonic, member-function operation, addressing mode and base cycle count. Bus::clock later calls CPU::clock.
 cpu6502::cpu6502()
 {
 	// Assembles the translation table. It's big, it's ugly, but it yields a convenient way
@@ -74,6 +76,8 @@ cpu6502::~cpu6502()
 // BUS CONNECTIVITY
 
 // Reads an 8-bit byte from the bus, located at the specified 16-bit address
+// TEACHING API: cpu6502::read
+// Ask the connected Bus for one mapped CPU byte; RAM, PPU registers, cartridge PRG and controller reads are decoded in Bus.cpp.
 uint8_t cpu6502::read(uint16_t a)
 {
 	// In normal operation "read only" is set to false. This may seem odd. Some
@@ -85,6 +89,8 @@ uint8_t cpu6502::read(uint16_t a)
 }
 
 // Writes a byte to the bus at the specified address
+// TEACHING API: cpu6502::write
+// Write one CPU byte through Bus; writing addresses may change PPU/APU/mapper registers rather than ordinary memory.
 void cpu6502::write(uint16_t a, uint8_t d)
 {
 	bus->cpuWrite(a, d);
@@ -105,6 +111,8 @@ void cpu6502::write(uint16_t a, uint8_t d)
 // memory to start executing from. Typically the programmer would set the value
 // at location 0xFFFC at compile time.
 // TEACHING FUNCTION: Reinitialize processor status/registers and load the reset vector through Bus memory mapping. Restart is observable in CPU state and instruction trace.
+// TEACHING API: cpu6502::reset
+// Load PC from the reset vector at $FFFC/$FFFD and restore CPU registers, flags and cycle delay.
 void cpu6502::reset()
 {
 	// Get address to set program counter to
@@ -145,6 +153,8 @@ void cpu6502::reset()
 // has happened, in a similar way to a reset, a programmable address
 // is read form hard coded location 0xFFFE, which is subsequently
 // set to the program counter.
+// TEACHING API: cpu6502::irq
+// Service a maskable interrupt if I is clear; save PC/status to the CPU stack, then jump through $FFFE/$FFFF.
 void cpu6502::irq()
 {
 	// If interrupts are allowed
@@ -179,6 +189,8 @@ void cpu6502::irq()
 // A Non-Maskable Interrupt cannot be ignored. It behaves in exactly the
 // same way as a regular IRQ, but reads the new program counter address
 // form location 0xFFFA.
+// TEACHING API: cpu6502::nmi
+// Service the unmaskable interrupt signaled by PPU through Bus; save execution context and jump through $FFFA/$FFFB.
 void cpu6502::nmi()
 {
 	write(0x0100 + stkp, (pc >> 8) & 0x00FF);
@@ -202,6 +214,8 @@ void cpu6502::nmi()
 
 // Perform one clock cycles worth of emulation
 // TEACHING FUNCTION: Instruction-cycle engine: fetch opcode when no cycles remain, apply addressing mode and operation, and account for additional cycles. Bus::clock calls this on CPU clock slots.
+// TEACHING API: cpu6502::clock
+// At instruction boundaries, decode opcode and perform its addressing mode and operation. Count cycles between completions; not a micro-operation-perfect 6502.
 void cpu6502::clock()
 {
 	// Each instruction requires a variable number of clock cycles to execute.
@@ -280,12 +294,16 @@ void cpu6502::clock()
 // FLAG FUNCTIONS
 
 // Returns the value of a specific bit of the status register
+// TEACHING API: cpu6502::GetFlag
+// Read a selected processor status bit (C,Z,I,D,B,U,V,N) as 0/1, used by arithmetic, branches and IRQ policy.
 uint8_t cpu6502::GetFlag(FLAGS6502 f)
 {
 	return ((status & f) > 0) ? 1 : 0;
 }
 
 // Sets or clears a specific bit of the status register
+// TEACHING API: cpu6502::SetFlag
+// Set or clear one processor status bit; these flags are visible to programs and interrupt stack frames.
 void cpu6502::SetFlag(FLAGS6502 f, bool v)
 {
 	if (v)
@@ -316,6 +334,8 @@ void cpu6502::SetFlag(FLAGS6502 f, bool v)
 // There is no additional data required for this instruction. The instruction
 // does something very simple like like sets a status bit. However, we will
 // target the accumulator, for instructions like PHA
+// TEACHING API: cpu6502::IMP
+// Implied or accumulator addressing; the operand is implicit, so no following memory address is fetched.
 uint8_t cpu6502::IMP()
 {
 	fetched = a;
@@ -326,6 +346,8 @@ uint8_t cpu6502::IMP()
 // Address Mode: Immediate
 // The instruction expects the next byte to be used as a value, so we'll prep
 // the read address to point to the next byte
+// TEACHING API: cpu6502::IMM
+// Immediate addressing: the next program byte is the operand.
 uint8_t cpu6502::IMM()
 {
 	addr_abs = pc++;	
@@ -338,6 +360,8 @@ uint8_t cpu6502::IMM()
 // To save program bytes, zero page addressing allows you to absolutely address
 // a location in first 0xFF bytes of address range. Clearly this only requires
 // one byte instead of the usual two.
+// TEACHING API: cpu6502::ZP0
+// Zero-page addressing: take an 8-bit address in $0000-$00FF.
 uint8_t cpu6502::ZP0()
 {
 	addr_abs = read(pc);	
@@ -352,6 +376,8 @@ uint8_t cpu6502::ZP0()
 // Fundamentally the same as Zero Page addressing, but the contents of the X Register
 // is added to the supplied single byte address. This is useful for iterating through
 // ranges within the first page.
+// TEACHING API: cpu6502::ZPX
+// Zero-page X indexing: add X and wrap the address to 8 bits.
 uint8_t cpu6502::ZPX()
 {
 	addr_abs = (read(pc) + x);
@@ -363,6 +389,8 @@ uint8_t cpu6502::ZPX()
 
 // Address Mode: Zero Page with Y Offset
 // Same as above but uses Y Register for offset
+// TEACHING API: cpu6502::ZPY
+// Zero-page Y indexing: add Y and wrap the address to 8 bits.
 uint8_t cpu6502::ZPY()
 {
 	addr_abs = (read(pc) + y);
@@ -376,6 +404,8 @@ uint8_t cpu6502::ZPY()
 // This address mode is exclusive to branch instructions. The address
 // must reside within -128 to +127 of the branch instruction, i.e.
 // you cant directly branch to any address in the addressable range.
+// TEACHING API: cpu6502::REL
+// Relative branch displacement: sign-extend the next byte for PC-relative control flow.
 uint8_t cpu6502::REL()
 {
 	addr_rel = read(pc);
@@ -388,6 +418,8 @@ uint8_t cpu6502::REL()
 
 // Address Mode: Absolute 
 // A full 16-bit address is loaded and used
+// TEACHING API: cpu6502::ABS
+// Absolute 16-bit address from next two bytes (little-endian).
 uint8_t cpu6502::ABS()
 {
 	uint16_t lo = read(pc);
@@ -405,6 +437,8 @@ uint8_t cpu6502::ABS()
 // Fundamentally the same as absolute addressing, but the contents of the X Register
 // is added to the supplied two byte address. If the resulting address changes
 // the page, an additional clock cycle is required
+// TEACHING API: cpu6502::ABX
+// Absolute address indexed with X; crossing a page may cost an extra CPU cycle.
 uint8_t cpu6502::ABX()
 {
 	uint16_t lo = read(pc);
@@ -426,6 +460,8 @@ uint8_t cpu6502::ABX()
 // Fundamentally the same as absolute addressing, but the contents of the Y Register
 // is added to the supplied two byte address. If the resulting address changes
 // the page, an additional clock cycle is required
+// TEACHING API: cpu6502::ABY
+// Absolute address indexed with Y; crossing a page may cost an extra CPU cycle.
 uint8_t cpu6502::ABY()
 {
 	uint16_t lo = read(pc);
@@ -452,6 +488,8 @@ uint8_t cpu6502::ABY()
 // we need to cross a page boundary. This doesnt actually work on the chip as 
 // designed, instead it wraps back around in the same page, yielding an 
 // invalid actual address
+// TEACHING API: cpu6502::IND
+// Indirect JMP reads a two-byte pointer, including original 6502 page-boundary behavior.
 uint8_t cpu6502::IND()
 {
 	uint16_t ptr_lo = read(pc);
@@ -478,6 +516,8 @@ uint8_t cpu6502::IND()
 // The supplied 8-bit address is offset by X Register to index
 // a location in page 0x00. The actual 16-bit address is read 
 // from this location
+// TEACHING API: cpu6502::IZX
+// Indexed-indirect ($nn,X): add X in zero-page before reading a pointer.
 uint8_t cpu6502::IZX()
 {
 	uint16_t t = read(pc);
@@ -497,6 +537,8 @@ uint8_t cpu6502::IZX()
 // here the actual 16-bit address is read, and the contents of
 // Y Register is added to it to offset it. If the offset causes a
 // change in page then an additional clock cycle is required.
+// TEACHING API: cpu6502::IZY
+// Indirect-indexed ($nn),Y: read pointer in zero-page, then add Y; page crossing may cost a cycle.
 uint8_t cpu6502::IZY()
 {
 	uint16_t t = read(pc);
@@ -529,6 +571,8 @@ uint8_t cpu6502::IZY()
 // is a variable global to the CPU, and is set by calling this 
 // function. It also returns it for convenience.
 // TEACHING FUNCTION: Resolve operand data after the selected addressing mode. Instructions should use this centralized fetch rather than bypassing Bus mapping.
+// TEACHING API: cpu6502::fetch
+// Retrieve the addressed operand through Bus except in implied/accumulator mode. Arithmetic and logic operations share this helper.
 uint8_t cpu6502::fetch()
 {
 	if (!(lookup[opcode].addrmode == &cpu6502::IMP))
@@ -611,6 +655,11 @@ uint8_t cpu6502::fetch()
 //       Negative Number + Negative Number = Negative Result -> OK! NO Overflow
 
 // TEACHING FUNCTION: Add-with-carry updates A and flags including carry/overflow; binary arithmetic correctness must be tested independently from games loading.
+// TEACHING API: cpu6502::ADC — 6502 opcode
+// Add fetched byte and carry into accumulator; update C for unsigned carry, V for signed overflow, N/Z for result.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::ADC()
 {
 	// Grab the data that we are adding to the accumulator
@@ -666,6 +715,11 @@ uint8_t cpu6502::ADC()
 // of M, the data(!) therfore we can simply add, exactly the same way we did 
 // before.
 
+// TEACHING API: cpu6502::SBC — 6502 opcode
+// Subtract fetched byte and incoming borrow (inverted C); update C,V,N,Z like 6502 binary subtraction.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::SBC()
 {
 	fetch();
@@ -698,6 +752,11 @@ uint8_t cpu6502::SBC()
 // Instruction: Bitwise Logic AND
 // Function:    A = A & M
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::AND — 6502 opcode
+// Bitwise A AND operand; update N and Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::AND()
 {
 	fetch();
@@ -711,6 +770,11 @@ uint8_t cpu6502::AND()
 // Instruction: Arithmetic Shift Left
 // Function:    A = C <- (A << 1) <- 0
 // Flags Out:   N, Z, C
+// TEACHING API: cpu6502::ASL — 6502 opcode
+// Shift operand left, bit 7 into carry; write back A or addressed memory, update N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::ASL()
 {
 	fetch();
@@ -728,6 +792,11 @@ uint8_t cpu6502::ASL()
 
 // Instruction: Branch if Carry Clear
 // Function:    if(C == 0) pc = address 
+// TEACHING API: cpu6502::BCC — 6502 opcode
+// Branch on carry clear; taken branch adds a cycle, crossing a page adds another.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::BCC()
 {
 	if (GetFlag(C) == 0)
@@ -746,6 +815,11 @@ uint8_t cpu6502::BCC()
 
 // Instruction: Branch if Carry Set
 // Function:    if(C == 1) pc = address
+// TEACHING API: cpu6502::BCS — 6502 opcode
+// Branch on carry set; taken branch and page-cross timing affect CPU cadence.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::BCS()
 {
 	if (GetFlag(C) == 1)
@@ -764,6 +838,11 @@ uint8_t cpu6502::BCS()
 
 // Instruction: Branch if Equal
 // Function:    if(Z == 1) pc = address
+// TEACHING API: cpu6502::BEQ — 6502 opcode
+// Branch when zero flag is set; typical after compare/equality arithmetic.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::BEQ()
 {
 	if (GetFlag(Z) == 1)
@@ -779,6 +858,11 @@ uint8_t cpu6502::BEQ()
 	return 0;
 }
 
+// TEACHING API: cpu6502::BIT — 6502 opcode
+// Test bits of memory without storing result: Z reflects A AND M; N/V copied from operand.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::BIT()
 {
 	fetch();
@@ -792,6 +876,11 @@ uint8_t cpu6502::BIT()
 
 // Instruction: Branch if Negative
 // Function:    if(N == 1) pc = address
+// TEACHING API: cpu6502::BMI — 6502 opcode
+// Branch when negative flag is set (result bit 7).
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::BMI()
 {
 	if (GetFlag(N) == 1)
@@ -810,6 +899,11 @@ uint8_t cpu6502::BMI()
 
 // Instruction: Branch if Not Equal
 // Function:    if(Z == 0) pc = address
+// TEACHING API: cpu6502::BNE — 6502 opcode
+// Branch when zero flag is clear; typical loop/control flow.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::BNE()
 {
 	if (GetFlag(Z) == 0)
@@ -828,6 +922,11 @@ uint8_t cpu6502::BNE()
 
 // Instruction: Branch if Positive
 // Function:    if(N == 0) pc = address
+// TEACHING API: cpu6502::BPL — 6502 opcode
+// Branch when negative flag is clear.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::BPL()
 {
 	if (GetFlag(N) == 0)
@@ -845,6 +944,11 @@ uint8_t cpu6502::BPL()
 
 // Instruction: Break
 // Function:    Program Sourced Interrupt
+// TEACHING API: cpu6502::BRK — 6502 opcode
+// Software interrupt: push return PC/status, set interrupt mask and load IRQ/BRK vector.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::BRK()
 {
 	pc++;
@@ -867,6 +971,11 @@ uint8_t cpu6502::BRK()
 
 // Instruction: Branch if Overflow Clear
 // Function:    if(V == 0) pc = address
+// TEACHING API: cpu6502::BVC — 6502 opcode
+// Branch when signed-overflow flag is clear.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::BVC()
 {
 	if (GetFlag(V) == 0)
@@ -885,6 +994,11 @@ uint8_t cpu6502::BVC()
 
 // Instruction: Branch if Overflow Set
 // Function:    if(V == 1) pc = address
+// TEACHING API: cpu6502::BVS — 6502 opcode
+// Branch when signed-overflow flag is set.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::BVS()
 {
 	if (GetFlag(V) == 1)
@@ -903,6 +1017,11 @@ uint8_t cpu6502::BVS()
 
 // Instruction: Clear Carry Flag
 // Function:    C = 0
+// TEACHING API: cpu6502::CLC — 6502 opcode
+// Clear carry C; often precedes ADC without carry-in.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::CLC()
 {
 	SetFlag(C, false);
@@ -912,6 +1031,11 @@ uint8_t cpu6502::CLC()
 
 // Instruction: Clear Decimal Flag
 // Function:    D = 0
+// TEACHING API: cpu6502::CLD — 6502 opcode
+// Clear decimal flag D. NES 2A03 arithmetic does not use decimal BCD mode.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::CLD()
 {
 	SetFlag(D, false);
@@ -921,6 +1045,11 @@ uint8_t cpu6502::CLD()
 
 // Instruction: Disable Interrupts / Clear Interrupt Flag
 // Function:    I = 0
+// TEACHING API: cpu6502::CLI — 6502 opcode
+// Clear interrupt-disable flag I, allowing maskable IRQ requests.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::CLI()
 {
 	SetFlag(I, false);
@@ -930,6 +1059,11 @@ uint8_t cpu6502::CLI()
 
 // Instruction: Clear Overflow Flag
 // Function:    V = 0
+// TEACHING API: cpu6502::CLV — 6502 opcode
+// Clear signed-overflow flag V.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::CLV()
 {
 	SetFlag(V, false);
@@ -939,6 +1073,11 @@ uint8_t cpu6502::CLV()
 // Instruction: Compare Accumulator
 // Function:    C <- A >= M      Z <- (A - M) == 0
 // Flags Out:   N, C, Z
+// TEACHING API: cpu6502::CMP — 6502 opcode
+// Compare A to operand by subtracting without storing result; set C,Z,N.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::CMP()
 {
 	fetch();
@@ -953,6 +1092,11 @@ uint8_t cpu6502::CMP()
 // Instruction: Compare X Register
 // Function:    C <- X >= M      Z <- (X - M) == 0
 // Flags Out:   N, C, Z
+// TEACHING API: cpu6502::CPX — 6502 opcode
+// Compare X to operand and set comparison flags C,Z,N.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::CPX()
 {
 	fetch();
@@ -967,6 +1111,11 @@ uint8_t cpu6502::CPX()
 // Instruction: Compare Y Register
 // Function:    C <- Y >= M      Z <- (Y - M) == 0
 // Flags Out:   N, C, Z
+// TEACHING API: cpu6502::CPY — 6502 opcode
+// Compare Y to operand and set comparison flags C,Z,N.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::CPY()
 {
 	fetch();
@@ -981,6 +1130,11 @@ uint8_t cpu6502::CPY()
 // Instruction: Decrement Value at Memory Location
 // Function:    M = M - 1
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::DEC — 6502 opcode
+// Decrement addressed memory byte, write it through Bus, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::DEC()
 {
 	fetch();
@@ -995,6 +1149,11 @@ uint8_t cpu6502::DEC()
 // Instruction: Decrement X Register
 // Function:    X = X - 1
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::DEX — 6502 opcode
+// Decrement X modulo 256, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::DEX()
 {
 	x--;
@@ -1007,6 +1166,11 @@ uint8_t cpu6502::DEX()
 // Instruction: Decrement Y Register
 // Function:    Y = Y - 1
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::DEY — 6502 opcode
+// Decrement Y modulo 256, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::DEY()
 {
 	y--;
@@ -1019,6 +1183,11 @@ uint8_t cpu6502::DEY()
 // Instruction: Bitwise Logic XOR
 // Function:    A = A xor M
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::EOR — 6502 opcode
+// Bitwise A XOR operand; update N and Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::EOR()
 {
 	fetch();
@@ -1032,6 +1201,11 @@ uint8_t cpu6502::EOR()
 // Instruction: Increment Value at Memory Location
 // Function:    M = M + 1
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::INC — 6502 opcode
+// Increment addressed memory byte, write it through Bus, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::INC()
 {
 	fetch();
@@ -1046,6 +1220,11 @@ uint8_t cpu6502::INC()
 // Instruction: Increment X Register
 // Function:    X = X + 1
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::INX — 6502 opcode
+// Increment X modulo 256, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::INX()
 {
 	x++;
@@ -1058,6 +1237,11 @@ uint8_t cpu6502::INX()
 // Instruction: Increment Y Register
 // Function:    Y = Y + 1
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::INY — 6502 opcode
+// Increment Y modulo 256, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::INY()
 {
 	y++;
@@ -1069,6 +1253,11 @@ uint8_t cpu6502::INY()
 
 // Instruction: Jump To Location
 // Function:    pc = address
+// TEACHING API: cpu6502::JMP — 6502 opcode
+// Set PC to absolute or indirect destination. Unlike JSR it does not push a return address.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::JMP()
 {
 	pc = addr_abs;
@@ -1078,6 +1267,11 @@ uint8_t cpu6502::JMP()
 
 // Instruction: Jump To Sub-Routine
 // Function:    Push current pc to stack, pc = address
+// TEACHING API: cpu6502::JSR — 6502 opcode
+// Push return address to stack and jump to subroutine; RTS later restores control flow.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::JSR()
 {
 	pc--;
@@ -1095,6 +1289,11 @@ uint8_t cpu6502::JSR()
 // Instruction: Load The Accumulator
 // Function:    A = M
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::LDA — 6502 opcode
+// Load accumulator from fetched operand, set N/Z; indexed address modes may add cycle.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::LDA()
 {
 	fetch();
@@ -1108,6 +1307,11 @@ uint8_t cpu6502::LDA()
 // Instruction: Load The X Register
 // Function:    X = M
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::LDX — 6502 opcode
+// Load X from fetched operand and update N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::LDX()
 {
 	fetch();
@@ -1121,6 +1325,11 @@ uint8_t cpu6502::LDX()
 // Instruction: Load The Y Register
 // Function:    Y = M
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::LDY — 6502 opcode
+// Load Y from fetched operand and update N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::LDY()
 {
 	fetch();
@@ -1130,6 +1339,11 @@ uint8_t cpu6502::LDY()
 	return 1;
 }
 
+// TEACHING API: cpu6502::LSR — 6502 opcode
+// Logical right shift, bit 0 into carry; high bit becomes zero, update N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::LSR()
 {
 	fetch();
@@ -1144,6 +1358,11 @@ uint8_t cpu6502::LSR()
 	return 0;
 }
 
+// TEACHING API: cpu6502::NOP — 6502 opcode
+// No visible register change; placeholder/undocumented variants still have timing/addressing semantics.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::NOP()
 {
 	switch (opcode) {
@@ -1163,6 +1382,11 @@ uint8_t cpu6502::NOP()
 // Instruction: Bitwise Logic OR
 // Function:    A = A | M
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::ORA — 6502 opcode
+// Bitwise A OR operand; update N and Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::ORA()
 {
 	fetch();
@@ -1175,6 +1399,11 @@ uint8_t cpu6502::ORA()
 
 // Instruction: Push Accumulator to Stack
 // Function:    A -> stack
+// TEACHING API: cpu6502::PHA — 6502 opcode
+// Push accumulator A to stack page uint8_t cpu6502::PHA(00 using stack pointer.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::PHA()
 {
 	write(0x0100 + stkp, a);
@@ -1186,6 +1415,11 @@ uint8_t cpu6502::PHA()
 // Instruction: Push Status Register to Stack
 // Function:    status -> stack
 // Note:        Break flag is set to 1 before push
+// TEACHING API: cpu6502::PHP — 6502 opcode
+// Push status flags to CPU stack with the instruction's break/unused-bit convention.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::PHP()
 {
 	write(0x0100 + stkp, status | B | U);
@@ -1199,6 +1433,11 @@ uint8_t cpu6502::PHP()
 // Instruction: Pop Accumulator off Stack
 // Function:    A <- stack
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::PLA — 6502 opcode
+// Pull accumulator from stack, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::PLA()
 {
 	stkp++;
@@ -1211,6 +1450,11 @@ uint8_t cpu6502::PLA()
 
 // Instruction: Pop Status Register off Stack
 // Function:    Status <- stack
+// TEACHING API: cpu6502::PLP — 6502 opcode
+// Pull processor flags from stack; account for break/unused status-bit rules.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::PLP()
 {
 	stkp++;
@@ -1219,6 +1463,11 @@ uint8_t cpu6502::PLP()
 	return 0;
 }
 
+// TEACHING API: cpu6502::ROL — 6502 opcode
+// Rotate left through carry: old bit 7 becomes C, old C enters bit 0.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::ROL()
 {
 	fetch();
@@ -1233,6 +1482,11 @@ uint8_t cpu6502::ROL()
 	return 0;
 }
 
+// TEACHING API: cpu6502::ROR — 6502 opcode
+// Rotate right through carry: old bit 0 becomes C, old C enters bit 7.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::ROR()
 {
 	fetch();
@@ -1247,6 +1501,11 @@ uint8_t cpu6502::ROR()
 	return 0;
 }
 
+// TEACHING API: cpu6502::RTI — 6502 opcode
+// Restore processor flags and PC from interrupt stack frame; returns from IRQ/NMI.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::RTI()
 {
 	stkp++;
@@ -1261,6 +1520,11 @@ uint8_t cpu6502::RTI()
 	return 0;
 }
 
+// TEACHING API: cpu6502::RTS — 6502 opcode
+// Pull return PC from stack and advance past the JSR instruction's address.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::RTS()
 {
 	stkp++;
@@ -1277,6 +1541,11 @@ uint8_t cpu6502::RTS()
 
 // Instruction: Set Carry Flag
 // Function:    C = 1
+// TEACHING API: cpu6502::SEC — 6502 opcode
+// Set carry C; often precedes SBC to mean no incoming borrow.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::SEC()
 {
 	SetFlag(C, true);
@@ -1286,6 +1555,11 @@ uint8_t cpu6502::SEC()
 
 // Instruction: Set Decimal Flag
 // Function:    D = 1
+// TEACHING API: cpu6502::SED — 6502 opcode
+// Set decimal-mode flag D; 2A03 does not implement decimal arithmetic.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::SED()
 {
 	SetFlag(D, true);
@@ -1295,6 +1569,11 @@ uint8_t cpu6502::SED()
 
 // Instruction: Set Interrupt Flag / Enable Interrupts
 // Function:    I = 1
+// TEACHING API: cpu6502::SEI — 6502 opcode
+// Set interrupt-disable flag I, masking regular IRQ (not NMI).
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::SEI()
 {
 	SetFlag(I, true);
@@ -1304,6 +1583,11 @@ uint8_t cpu6502::SEI()
 
 // Instruction: Store Accumulator at Address
 // Function:    M = A
+// TEACHING API: cpu6502::STA — 6502 opcode
+// Store A to mapped address through Bus; destination may be cartridge/I/O register.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::STA()
 {
 	write(addr_abs, a);
@@ -1313,6 +1597,11 @@ uint8_t cpu6502::STA()
 
 // Instruction: Store X Register at Address
 // Function:    M = X
+// TEACHING API: cpu6502::STX — 6502 opcode
+// Store X to mapped address through Bus.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::STX()
 {
 	write(addr_abs, x);
@@ -1322,6 +1611,11 @@ uint8_t cpu6502::STX()
 
 // Instruction: Store Y Register at Address
 // Function:    M = Y
+// TEACHING API: cpu6502::STY — 6502 opcode
+// Store Y to mapped address through Bus.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::STY()
 {
 	write(addr_abs, y);
@@ -1332,6 +1626,11 @@ uint8_t cpu6502::STY()
 // Instruction: Transfer Accumulator to X Register
 // Function:    X = A
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::TAX — 6502 opcode
+// Copy A to X, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::TAX()
 {
 	x = a;
@@ -1344,6 +1643,11 @@ uint8_t cpu6502::TAX()
 // Instruction: Transfer Accumulator to Y Register
 // Function:    Y = A
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::TAY — 6502 opcode
+// Copy A to Y, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::TAY()
 {
 	y = a;
@@ -1356,6 +1660,11 @@ uint8_t cpu6502::TAY()
 // Instruction: Transfer Stack Pointer to X Register
 // Function:    X = stack pointer
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::TSX — 6502 opcode
+// Copy stack pointer to X, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::TSX()
 {
 	x = stkp;
@@ -1368,6 +1677,11 @@ uint8_t cpu6502::TSX()
 // Instruction: Transfer X Register to Accumulator
 // Function:    A = X
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::TXA — 6502 opcode
+// Copy X to A, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::TXA()
 {
 	a = x;
@@ -1379,6 +1693,11 @@ uint8_t cpu6502::TXA()
 
 // Instruction: Transfer X Register to Stack Pointer
 // Function:    stack pointer = X
+// TEACHING API: cpu6502::TXS — 6502 opcode
+// Copy X to stack pointer; does not update N/Z flags.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::TXS()
 {
 	stkp = x;
@@ -1389,6 +1708,11 @@ uint8_t cpu6502::TXS()
 // Instruction: Transfer Y Register to Accumulator
 // Function:    A = Y
 // Flags Out:   N, Z
+// TEACHING API: cpu6502::TYA — 6502 opcode
+// Copy Y to A, set N/Z.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::TYA()
 {
 	a = y;
@@ -1399,6 +1723,11 @@ uint8_t cpu6502::TYA()
 
 
 // This function captures illegal opcodes
+// TEACHING API: cpu6502::XXX — 6502 opcode
+// Fallback for unimplemented/illegal opcodes. Returning without correct hardware behavior is a compatibility limitation.
+// Called by cpu6502::clock via the opcode lookup table; fetch()/write()
+// access mapped bus memory as required. Return value signals possible extra
+// addressing-dependent cycles, not a boolean instruction success code.
 uint8_t cpu6502::XXX()
 {
 	return 0;
@@ -1411,6 +1740,8 @@ uint8_t cpu6502::XXX()
 ///////////////////////////////////////////////////////////////////////////////
 // HELPER FUNCTIONS
 
+// TEACHING API: cpu6502::complete
+// True when remaining instruction cycles reach zero. Main uses it for debugger instruction-step mode.
 bool cpu6502::complete()
 {
 	return cycles == 0;
@@ -1421,6 +1752,8 @@ bool cpu6502::complete()
 // human readable form. Its included as part of the emulator because it can take
 // advantage of many of the CPUs internal operations to do this.
 // TEACHING FUNCTION: Debugger helper: decode mapped program bytes for UI presentation, not CPU execution. Debug reads should avoid accidental hardware side effects.
+// TEACHING API: cpu6502::disassemble
+// Build a human-readable instruction listing for debugger UI from CPU memory and addressing modes; it is not part of executing instructions.
 std::map<uint16_t, std::string> cpu6502::disassemble(uint16_t nStart, uint16_t nStop)
 {
 	uint32_t addr = nStart;
