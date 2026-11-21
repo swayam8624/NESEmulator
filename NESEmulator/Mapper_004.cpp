@@ -1,3 +1,11 @@
+// TEACHING FILE GUIDE
+// MMC3-style bank switching and scanline IRQ behavior. CPU register writes
+// configure PRG/CHR windows; PPU rendering/scanline progress can trigger
+// mapper interrupt state observed by the CPU through Bus.
+// This mapper has more timing-sensitive behavior than NROM/UxROM; validate
+// A12/scanline semantics and mirroring instead of just loading one game.
+// See docs/SOURCE_READING_ORDER.md and the companion module declarations.
+
 module;
 #include <algorithm>
 #include <array>
