@@ -31,6 +31,7 @@ private:
 	// Support Utilities
 	std::map<uint16_t, std::string> mapAsm;
 
+	// TEACHING METHOD: Debugger-only formatting of CPU registers, byte values and disassembly addresses.
 	std::string hex(uint32_t n, uint8_t d)
 	{
 		std::string s(d, '0');
@@ -39,6 +40,7 @@ private:
 		return s;
 	};
 
+	// TEACHING METHOD: Read mapped CPU memory without intended hardware side effects through the Bus diagnostic flag.
 	void DrawRam(int x, int y, uint16_t nAddr, int nRows, int nColumns)
 	{
 		int nRamX = x, nRamY = y;
@@ -55,6 +57,7 @@ private:
 		}
 	}
 
+	// TEACHING METHOD: Render CPU register/flag state while examining PPU behavior.
 	void DrawCpu(int x, int y)
 	{
 		std::string status = "STATUS: ";
@@ -74,6 +77,7 @@ private:
 		DrawString(x , y + 50, "Stack P: $" + hex(nes.cpu.stkp, 4));
 	}
 
+	// TEACHING METHOD: Show nearby disassembly; this legacy iterator loop needs a boundary safety review.
 	void DrawCode(int x, int y, int nLines)
 	{
 		auto it_a = mapAsm.find(nes.cpu.pc);
@@ -106,6 +110,7 @@ private:
 		}
 	}
 
+	// TEACHING METHOD: Create cartridge and PPU demo. The current hard-coded developer-specific absolute ROM path is not portable; use a resolved fixture path when enabling as a test.
 	bool OnUserCreate()
 	{
 		// Load the cartridge
@@ -126,6 +131,7 @@ private:
 		return true;
 	}
 
+	// TEACHING METHOD: Step one CPU instruction or PPU frame, then display the real PPU framebuffer and CPU state through PixelGameEngine.
 	bool OnUserUpdate(float fElapsedTime)
 	{
 		Clear(kairo::DARK_BLUE);
@@ -184,6 +190,7 @@ private:
 
 
 
+// TEACHING METHOD: Launch this standalone PPU demonstration; it is not compiled by the active CMake target.
 int main()
 {
 	Demo_ppu2C02 demo;
