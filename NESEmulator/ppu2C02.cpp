@@ -1,3 +1,12 @@
+// TEACHING FILE GUIDE
+// NES Picture Processing Unit state machine. CPU-visible PPU register access
+// arrives through Bus.cpp; background/sprite fetches access CHR through
+// Cartridge.cpp and the mapper. PPU clocks raster output into a frame buffer
+// consumed by main.cpp's host pixel engine.
+// Pattern/name/palette memory mapping, scrolling and NMI timing must be verified
+// against PPU tests; pixel output alone does not establish hardware accuracy.
+// Further reading: docs/SOURCE_READING_ORDER.md
+
 module;
 #include <algorithm>
 #include <array>
