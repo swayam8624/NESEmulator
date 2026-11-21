@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE (integration and provenance):
+// MMC3 bank mapping and IRQ/scanning hooks. Cartridge.cpp dispatches reads and writes to this
+// mapper; compare its state transitions with Mapper.cpp's default hooks and the CPU/PPU timing in
+// Bus.cpp.
+// See docs/SOURCE_READING_ORDER.md and docs/THIRD_PARTY_AND_ROMS.md.
+
 module;
 #include <algorithm>
 #include <array>
