@@ -40,6 +40,7 @@ apu2A03::~apu2A03()
 {
 }
 
+// TEACHING FUNCTION: Write the CPU-visible APU register space via Bus. Channel envelope/frequency changes affect audio emitted later by GetOutputSample.
 void apu2A03::cpuWrite(uint16_t addr, uint8_t data)
 {
 	switch (addr)
@@ -159,6 +160,7 @@ void apu2A03::cpuWrite(uint16_t addr, uint8_t data)
 	}
 }
 
+// TEACHING FUNCTION: Return observable APU register/status state to CPU code routed through Bus::cpuRead.
 uint8_t apu2A03::cpuRead(uint16_t addr)
 {
 	uint8_t data = 0x00;
@@ -173,6 +175,7 @@ uint8_t apu2A03::cpuRead(uint16_t addr)
 	return data;
 }
 
+// TEACHING FUNCTION: Advance partial APU channel state on emulated clock events. Fidelity depends on frame sequencing and proper synchronization with CPU time.
 void apu2A03::clock()
 {
 	// Depending on the frame count, we set a flag to tell 
@@ -312,6 +315,7 @@ void apu2A03::clock()
 	clock_counter++;
 }
 
+// TEACHING FUNCTION: Expose the current mixed output to the host audio callback; it does not independently drive CPU/PPU emulation.
 double apu2A03::GetOutputSample()
 {
 	if (bUseRawMode)
