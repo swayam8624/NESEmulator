@@ -74,6 +74,8 @@ cpu6502::~cpu6502()
 // BUS CONNECTIVITY
 
 // Reads an 8-bit byte from the bus, located at the specified 16-bit address
+// All CPU loads go through Bus::cpuRead so RAM, cartridge banks,
+// controller shifts and PPU/APU register side effects remain centralized.
 uint8_t cpu6502::read(uint16_t a)
 {
 	// In normal operation "read only" is set to false. This may seem odd. Some
@@ -85,6 +87,8 @@ uint8_t cpu6502::read(uint16_t a)
 }
 
 // Writes a byte to the bus at the specified address
+// All CPU stores go through Bus::cpuWrite, which may alter mapper banks,
+// start sprite DMA, latch a controller or update mapped I/O registers.
 void cpu6502::write(uint16_t a, uint8_t d)
 {
 	bus->cpuWrite(a, d);
@@ -104,6 +108,9 @@ void cpu6502::write(uint16_t a, uint8_t d)
 // allows the programmer to jump to a known and programmable location in the
 // memory to start executing from. Typically the programmer would set the value
 // at location 0xFFFC at compile time.
+// Fetch 16-bit reset vector from $FFFC/$FFFD through the bus. The
+// Cartridge/Mapper determines the actual PRG bytes at these addresses.
+// Initializes registers and delays next decode by eight emulated cycles.
 void cpu6502::reset()
 {
 	// Get address to set program counter to
@@ -144,6 +151,9 @@ void cpu6502::reset()
 // has happened, in a similar way to a reset, a programmable address
 // is read form hard coded location 0xFFFE, which is subsequently
 // set to the program counter.
+// Maskable IRQ: ignored while interrupt-disable flag I is set. Otherwise
+// save PC/status to page-$01 stack and load IRQ vector at $FFFE/$FFFF.
+// Bus::clock forwards mapper IRQs to this entry point.
 void cpu6502::irq()
 {
 	// If interrupts are allowed
@@ -178,6 +188,9 @@ void cpu6502::irq()
 // A Non-Maskable Interrupt cannot be ignored. It behaves in exactly the
 // same way as a regular IRQ, but reads the new program counter address
 // form location 0xFFFA.
+// Non-maskable interrupt enters through vector $FFFA/$FFFB. The PPU
+// raises this on vertical blank when enabled; Bus::clock acknowledges it
+// and calls nmi independent of the CPU interrupt-disable flag.
 void cpu6502::nmi()
 {
 	write(0x0100 + stkp, (pc >> 8) & 0x00FF);
@@ -200,6 +213,11 @@ void cpu6502::nmi()
 }
 
 // Perform one clock cycles worth of emulation
+// Instruction-level state transition with cycle countdown. When cycles
+// reaches zero, read opcode, run its addressing-mode callback, execute
+// its operation callback, add conditional extra cycles, then count down.
+// Effects are committed at decode time rather than on each hardware bus
+// microcycle: do not claim cycle-exact timing from this implementation.
 void cpu6502::clock()
 {
 	// Each instruction requires a variable number of clock cycles to execute.
@@ -526,6 +544,9 @@ uint8_t cpu6502::IZY()
 // 256, i.e. no far reaching memory fetch is required. "fetched"
 // is a variable global to the CPU, and is set by calling this 
 // function. It also returns it for convenience.
+// Addressing modes set addr_abs or addr_rel; fetch obtains the operand
+// from the selected bus address unless the instruction uses implied mode.
+// Instruction handlers (ADC/LDA/etc.) consume the fetched value.
 uint8_t cpu6502::fetch()
 {
 	if (!(lookup[opcode].addrmode == &cpu6502::IMP))
@@ -607,6 +628,9 @@ uint8_t cpu6502::fetch()
 //       Positive Number + Positive Number = Positive Result -> OK! No Overflow
 //       Negative Number + Negative Number = Negative Result -> OK! NO Overflow
 
+// 6502 add-with-carry arithmetic. Uses fetch() and the carry flag,
+// then updates status bits; tests should cover carry and signed overflow
+// separately because these represent different arithmetic conditions.
 uint8_t cpu6502::ADC()
 {
 	// Grab the data that we are adding to the accumulator
@@ -841,6 +865,9 @@ uint8_t cpu6502::BPL()
 
 // Instruction: Break
 // Function:    Program Sourced Interrupt
+// Software interrupt instruction; pushes return PC and status and
+// branches through the IRQ/BRK vector. Compare to irq()/nmi() for the
+// different B flag and interrupt-vector semantics.
 uint8_t cpu6502::BRK()
 {
 	pc++;
