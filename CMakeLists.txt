@@ -1,3 +1,14 @@
+# TEACHING BUILD MAP
+# CMake constructs only the "game" host executable; testing6502.cpp and
+# testing2C02.cpp are educational demos, not CTest-registered test targets.
+# KairoNES.cppm is the C++23 module interface; the listed .cpp files are
+# implementation units of the same module. CMake scans module dependencies.
+# The adapted PixelGameEngine uses platform window/graphics APIs, so this
+# configuration links macOS OpenGL, GLUT, Cocoa and libpng, with paths from
+# Homebrew. It is not yet a portable Linux/Windows build.
+# POST_BUILD copies ROM fixtures; their redistribution rights are separate
+# from the license on original source code.
+
 cmake_minimum_required(VERSION 4.0)
 
 project(NESEmulator LANGUAGES CXX)
