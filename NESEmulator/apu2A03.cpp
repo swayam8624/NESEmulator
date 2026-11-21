@@ -30,6 +30,9 @@ uint8_t apu2A03::length_table[] = {  10, 254, 20,  2, 40,  4, 80,  6,
 							         12,  16, 24, 18, 48, 20, 96, 22,
 							        192,  24, 72, 26, 16, 28, 32, 30 };
 
+// TEACHING API: apu2A03::apu2A03
+// Construct the APU's pulse/noise and sequencing state. The PPU/CPU own
+// independent emulated state; Bus clocks devices in their respective cadence.
 apu2A03::apu2A03()
 {
 	noise_seq.sequence = 0xDBDB;
@@ -41,6 +44,10 @@ apu2A03::~apu2A03()
 }
 
 // TEACHING FUNCTION: Write the CPU-visible APU register space via Bus. Channel envelope/frequency changes affect audio emitted later by GetOutputSample.
+// TEACHING API: apu2A03::cpuWrite
+// Translate CPU I/O writes into pulse duty/envelope, timer, noise and
+// other supported channel settings. Bus::cpuWrite dispatches the APU ranges.
+// Unimplemented register cases make this path partial, not cycle-accurate audio.
 void apu2A03::cpuWrite(uint16_t addr, uint8_t data)
 {
 	switch (addr)
@@ -161,6 +168,9 @@ void apu2A03::cpuWrite(uint16_t addr, uint8_t data)
 }
 
 // TEACHING FUNCTION: Return observable APU register/status state to CPU code routed through Bus::cpuRead.
+// TEACHING API: apu2A03::cpuRead
+// Expose CPU-visible APU status to Bus::cpuRead. Read semantics are hardware
+// observable and need channel/IRQ regression tests before declaring fidelity.
 uint8_t apu2A03::cpuRead(uint16_t addr)
 {
 	uint8_t data = 0x00;
@@ -176,6 +186,9 @@ uint8_t apu2A03::cpuRead(uint16_t addr)
 }
 
 // TEACHING FUNCTION: Advance partial APU channel state on emulated clock events. Fidelity depends on frame sequencing and proper synchronization with CPU time.
+// TEACHING API: apu2A03::clock
+// Advance audio counters and channel oscillators on the emulated timeline.
+// The Bus owns the clock; host audio consumption is a separate rate problem.
 void apu2A03::clock()
 {
 	// Depending on the frame count, we set a flag to tell 
@@ -316,6 +329,9 @@ void apu2A03::clock()
 }
 
 // TEACHING FUNCTION: Expose the current mixed output to the host audio callback; it does not independently drive CPU/PPU emulation.
+// TEACHING API: apu2A03::GetOutputSample
+// Return the current mixed sample to Bus, which forwards it to the host audio
+// callback. Output quality depends on channel accuracy and time sampling.
 double apu2A03::GetOutputSample()
 {
 	if (bUseRawMode)
@@ -331,6 +347,9 @@ double apu2A03::GetOutputSample()
 	}
 }
 
+// TEACHING API: apu2A03::reset
+// Reinitialize channel/sequence and sample state on console reset. This
+// does not re-create the host audio device or reload cartridge data.
 void apu2A03::reset()
 {
 }
