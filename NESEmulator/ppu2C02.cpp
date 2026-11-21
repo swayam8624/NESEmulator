@@ -231,6 +231,11 @@ kairo::Sprite& ppu2C02::GetNameTable(uint8_t i)
 }
 
 
+// CPU-visible PPU register read (Bus mirrors $2000-$3FFF onto 8 ports).
+// Read-only debug mode returns selected register snapshots; normal reads
+// can clear VBlank and the scroll/address latch, or advance the VRAM
+// address after buffered PPUDATA reads. Never treat all register reads as
+// passive memory loads.
 uint8_t ppu2C02::cpuRead(uint16_t addr, bool rdonly)
 {
 	uint8_t data = 0x00;
@@ -334,6 +339,9 @@ uint8_t ppu2C02::cpuRead(uint16_t addr, bool rdonly)
 	return data;
 }
 
+// CPU writes to PPU control/mask, scroll, address, OAM, and data ports.
+// The two-write loopy scroll/address latch and VRAM increment policy
+// determine which later background tiles/palette bytes are fetched.
 void ppu2C02::cpuWrite(uint16_t addr, uint8_t data)
 {
 	switch (addr)
@@ -405,6 +413,9 @@ void ppu2C02::cpuWrite(uint16_t addr, uint8_t data)
 	}
 }
 
+// PPU-native address space, distinct from CPU register address space.
+// Cartridge/Mapper gets first chance at CHR $0000-$1FFF; internal
+// nametable and palette RAM follow, with mirroring from Cartridge::Mirror.
 uint8_t ppu2C02::ppuRead(uint16_t addr, bool rdonly)
 {
 	uint8_t data = 0x00;
@@ -462,6 +473,9 @@ uint8_t ppu2C02::ppuRead(uint16_t addr, bool rdonly)
 	return data;
 }
 
+// PPU-native storage write: route CHR through Cartridge mapper, or
+// update internal nametable/palette RAM after applying mirroring rules.
+// Compare ppuRead for why CPU's $2007 port accesses this separately.
 void ppu2C02::ppuWrite(uint16_t addr, uint8_t data)
 {
 	addr &= 0x3FFF;
@@ -513,6 +527,8 @@ void ppu2C02::ppuWrite(uint16_t addr, uint8_t data)
 	}
 }
 
+// Connect the same ROM/mapper shared with Bus so PPU tile fetches use
+// exactly the selected cartridge bank, not a second copy of CHR storage.
 void ppu2C02::ConnectCartridge(const std::shared_ptr<Cartridge>& cartridge)
 {
 	this->cart = cartridge;
@@ -542,6 +558,10 @@ void ppu2C02::reset()
 	odd_frame = false;
 }
 
+// One PPU dot: scroll and background tile fetch state machine, sprite
+// evaluation/composition, pixels, scanline/frame bookkeeping, and VBlank
+// NMI signaling to Bus::clock. Keep this separate from CPU instruction
+// clocks (one CPU tick per three system ticks in the Bus scheduler).
 void ppu2C02::clock()
 {
 	// As we progress through scanlines and cycles, the PPU is effectively
