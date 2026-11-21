@@ -1,3 +1,12 @@
+// TEACHING FILE GUIDE
+// 6502 instruction and addressing-mode implementation. The lookup table maps
+// opcode bytes to an addressing mode, operation and nominal cycle count.
+// Bus::cpuRead/cpuWrite are the only path to mapped hardware memory; CPU code
+// must not know individual cartridge/PPU devices. Page-crossing, branch and
+// interrupt timing are testable semantics, not optional performance details.
+// Use nestest and CPU trace tests to verify register/flag/cycle transitions.
+// Further reading: docs/SOURCE_READING_ORDER.md
+
 module;
 #include <algorithm>
 #include <array>
