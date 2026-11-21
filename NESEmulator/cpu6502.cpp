@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// 6502 instruction interpreter. The opcode table combines an instruction operation, addressing-mode
+// resolver, and cycle count. CPU memory operations run through Bus::cpuRead/cpuWrite, not directly into
+// Cartridge or PPU storage; Bus::clock schedules the CPU relative to the PPU.
+// Guided cross-file links: docs/SOURCE_READING_ORDER.md.
+
 module;
 #include <algorithm>
 #include <array>
