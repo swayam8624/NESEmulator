@@ -17,6 +17,9 @@ module;
 #include <vector>
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
+// TEACHING API: Bus::Bus
+// Creates the console interconnect and gives the CPU a pointer to this bus.
+// The CPU then calls Bus::cpuRead/cpuWrite for all memory-mapped operations.
 Bus::Bus()
 {
 	// Connect CPU to communication bus
@@ -25,11 +28,18 @@ Bus::Bus()
 }
 
 
+// TEACHING API: Bus::~Bus
+// Releases the bus object; device members and shared cartridge ownership follow
+// their own C++ lifetimes. This is not a reset of the emulated console.
 Bus::~Bus()
 {
 }
 
 // TEACHING FUNCTION: Convert output audio sample rate to a time interval and establish the NES master-clock interval. The host may request 44.1 kHz, but emulation timing remains based on console cycles.
+// TEACHING API: Bus::SetSampleFrequency
+// Converts a host output rate into seconds per audio sample. The APU advances
+// on emulated ticks, while the host decides how often a sample is consumed.
+// API: sample_rate is in Hz; a zero rate is currently not rejected.
 void Bus::SetSampleFrequency(uint32_t sample_rate)
 {
 	dAudioTimePerSystemSample = 1.0 / (double)sample_rate;
@@ -39,6 +49,10 @@ void Bus::SetSampleFrequency(uint32_t sample_rate)
 // CPU write decoder: cartridge receives the address first; later branches select mirrored RAM,
 // PPU/APU, DMA or controller hardware. Register writes have side effects, unlike ordinary RAM
 // writes.
+// TEACHING API: Bus::cpuWrite
+// Decodes CPU-visible address ranges: cartridge first, then mirrored RAM, PPU
+// registers, APU, DMA and controller latch. Writes can trigger hardware effects.
+// Consumers: 6502 instructions and host debugging; collaborators: Cartridge/PPU/APU.
 void Bus::cpuWrite(uint16_t addr, uint8_t data)
 {	
 	if (cart->cpuWrite(addr, data))
@@ -87,6 +101,10 @@ void Bus::cpuWrite(uint16_t addr, uint8_t data)
 	
 }
 
+// TEACHING API: Bus::cpuRead
+// Decodes CPU-visible reads, including controller shift-state and PPU status.
+// bReadOnly requests inspection that should not mutate device state; the PPU
+// receives the flag. The CPU and disassembler call this interface.
 uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 {
 	uint8_t data = 0x00;	
@@ -120,6 +138,10 @@ uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 }
 
 // TEACHING FUNCTION: Connect loaded ROM state to bus/PPU. Cartridge owns PRG/CHR and mapper logic; this operation must precede meaningful instruction execution.
+// TEACHING API: Bus::insertCartridge
+// Wires an already-created cartridge into the machine and PPU so both CPU
+// program reads and PPU pattern fetches use the same mapper/bank configuration.
+// Call before reset/clock; ownership uses std::shared_ptr.
 void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 {
 	// Connects cartridge to both Main Bus and CPU Bus
@@ -128,6 +150,9 @@ void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 }
 
 // TEACHING FUNCTION: Restore CPU/PPU/APU/mapper timing state for a fresh machine run. A reset is not a reload of ROM bytes; compare Cartridge::reset.
+// TEACHING API: Bus::reset
+// Resets emulated devices, counters and DMA state; ROM contents remain owned
+// by Cartridge. See CPU reset-vector reads and PPU reset state for consequences.
 void Bus::reset()
 {
 	cart->reset();
@@ -142,6 +167,10 @@ void Bus::reset()
 }
 
 // TEACHING FUNCTION: Advance console devices at their relative clock rates; handle OAM DMA stalls and coordinate audio sampling. main.cpp uses this to advance emulated time without directly clocking devices.
+// TEACHING API: Bus::clock
+// Advances PPU/APU per system tick, CPU every third tick except during OAM
+// DMA, and handles NMI/mapper IRQ. It can signal when a host audio sample is
+// ready. Main's update loop repeatedly calls this function to advance time.
 bool Bus::clock()
 {
 	// Clocking. The heart and soul of an emulator. The running
