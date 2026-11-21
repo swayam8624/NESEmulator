@@ -1,3 +1,10 @@
+// TEACHING FILE GUIDE
+// UxROM-style PRG bank selector. CPU writes update a switchable code bank
+// while a fixed bank remains available for vectors/startup logic. Cartridge
+// owns ROM bytes; this mapper chooses offsets for Bus CPU memory accesses.
+// Compare reset bank and boundaries against Mapper_000 and mapper tests.
+// See docs/SOURCE_READING_ORDER.md and the companion module declarations.
+
 module;
 #include <algorithm>
 #include <array>
