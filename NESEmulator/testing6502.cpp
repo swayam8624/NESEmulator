@@ -23,6 +23,7 @@ public:
 	Bus nes;
 	std::map<uint16_t, std::string> mapAsm;
 
+	// TEACHING METHOD: Format register and address bytes for the CPU debugging display.
 	std::string hex(uint32_t n, uint8_t d)
 	{
 		std::string s(d, '0');
@@ -31,6 +32,7 @@ public:
 		return s;
 	};
 
+	// TEACHING METHOD: Despite this historical name, the method reads Bus CPU memory with readOnly=true and draws hex values.
 	void DrawcpuWrite(int x, int y, uint16_t nAddr, int nRows, int nColumns)
 	{
 		int ncpuWriteX = x, ncpuWriteY = y;
@@ -47,6 +49,7 @@ public:
 		}
 	}
 
+	// TEACHING METHOD: Draw PC, A/X/Y, stack pointer and flags directly from cpu6502 architectural state.
 	void DrawCpu(int x, int y)
 	{
 		std::string status = "STATUS: ";
@@ -66,6 +69,7 @@ public:
 		DrawString(x , y + 50, "Stack P: $" + hex(nes.cpu.stkp, 4));
 	}
 
+	// TEACHING METHOD: Render disassembled instructions; decrementing a begin iterator requires a bounds guard before production use.
 	void DrawCode(int x, int y, int nLines)
 	{
 		auto it_a = mapAsm.find(nes.cpu.pc);
@@ -98,6 +102,7 @@ public:
 		}
 	}
 
+	// TEACHING METHOD: Load a toy byte program and reset vector. This demo has no cartridge insertion, so Bus::cpuWrite may dereference a null cartridge in current code; this must be repaired before activating it.
 	bool OnUserCreate()
 	{
 		// Load ProgcpuWrite (assembled at https://www.masswerk.at/6502/assembler.html)
@@ -145,6 +150,7 @@ public:
 		return true;
 	}
 
+	// TEACHING METHOD: Accept instruction stepping and interrupt injection; calls CPU::clock directly rather than the full PPU/APU Bus clock, making it a CPU-focused illustration.
 	bool OnUserUpdate(float fElapsedTime)
 	{
 		Clear(kairo::DARK_BLUE);
@@ -185,6 +191,7 @@ public:
 
 
 
+// TEACHING METHOD: Start the standalone educational pixel window; this source is not registered in the current CMake game target.
 int main()
 {
 	Demo_cpu6502 demo;
