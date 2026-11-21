@@ -1,3 +1,9 @@
+// TEACHING GUIDE — Mapper_001.cpp
+// Mapper 1 / MMC1: serial shift-register writes configure PRG bank modes, CHR bank modes, and 
+// nametable mirroring. Cartridge asks this mapper to translate CPU/PPU addresses, while Bus 
+// drives CPU writes.
+// Read ../READING_ORDER.md for API interactions and upstream code attribution.
+
 module;
 #include <algorithm>
 #include <array>
@@ -70,6 +76,8 @@ bool Mapper_001::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 	return false;
 }
 
+// MMC1 register writes arrive via cpu6502 -> Bus -> Cartridge; serial
+// programming changes bank-selection state without copying ROM data.
 bool Mapper_001::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 {
 	if (addr >= 0x6000 && addr <= 0x7FFF)

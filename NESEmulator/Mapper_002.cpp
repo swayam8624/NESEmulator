@@ -1,3 +1,8 @@
+// TEACHING GUIDE — Mapper_002.cpp
+// Mapper 2 / UxROM: CPU writes switch one PRG-ROM bank, another remains fixed. Follow 
+// cpuMapRead and cpuMapWrite together to see stateful bus address translation.
+// Read ../READING_ORDER.md for API interactions and upstream code attribution.
+
 module;
 #include <algorithm>
 #include <array>
@@ -42,6 +47,8 @@ bool Mapper_002::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 	return false;
 }
 
+// Writes select a PRG bank; actual PRG bytes remain in Cartridge.
+// The write is bank-control I/O, not an ordinary ROM mutation.
 bool Mapper_002::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 {
 	if (addr >= 0x8000 && addr <= 0xFFFF)
