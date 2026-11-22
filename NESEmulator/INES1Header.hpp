@@ -15,7 +15,9 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <istream>
 #include <stdexcept>
+#include <vector>
 
 namespace kairo::nes::detail
 {
@@ -29,6 +31,16 @@ namespace kairo::nes::detail
         std::size_t PRGBytes = 0;
         std::size_t CHRFileBytes = 0;
         std::size_t CHRStorageBytes = 0;
+    };
+
+    // This reader returns fully owned bounded byte vectors, never references
+    // into the input stream. Cartridge uses them only after every expected
+    // region was completely read, making short files an atomic rejection.
+    struct INES1RomPayload final
+    {
+        INES1Header Header;
+        std::vector<std::uint8_t> PRG;
+        std::vector<std::uint8_t> CHR;
     };
 
     [[nodiscard]] inline INES1Header ParseINES1Header(
@@ -76,5 +88,40 @@ namespace kairo::nes::detail
         result.CHRStorageBytes = result.CHRFileBytes == 0u ?
             8u * 1024u : result.CHRFileBytes;
         return result;
+    }
+
+    [[nodiscard]] inline INES1RomPayload ReadINES1Rom(std::istream& input)
+    {
+        std::array<std::uint8_t, 16u> raw{};
+        if (!input.read(reinterpret_cast<char*>(raw.data()),
+            static_cast<std::streamsize>(raw.size())))
+            throw std::invalid_argument("iNES ROM header is truncated.");
+
+        INES1RomPayload image;
+        image.Header = ParseINES1Header(raw); // before allocating ROM banks
+
+        if (image.Header.TrainerPresent)
+        {
+            std::array<char, 512u> trainer{};
+            if (!input.read(trainer.data(),
+                static_cast<std::streamsize>(trainer.size())))
+                throw std::invalid_argument("iNES ROM trainer is truncated.");
+        }
+
+        image.PRG.resize(image.Header.PRGBytes);
+        if (!input.read(reinterpret_cast<char*>(image.PRG.data()),
+            static_cast<std::streamsize>(image.PRG.size())))
+            throw std::invalid_argument("iNES PRG ROM payload is truncated.");
+
+        // CHR bank count 0 means emulator-owned RAM filled with zeroes, not
+        // 8192 bytes serialized after PRG. Reading there would reject valid
+        // CHR-RAM cartridges and misalign any subsequent ROM data.
+        image.CHR.resize(image.Header.CHRStorageBytes);
+        if (image.Header.CHRFileBytes != 0u &&
+            !input.read(reinterpret_cast<char*>(image.CHR.data()),
+                static_cast<std::streamsize>(image.Header.CHRFileBytes)))
+            throw std::invalid_argument("iNES CHR ROM payload is truncated.");
+
+        return image;
     }
 }
