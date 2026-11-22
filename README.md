@@ -39,12 +39,13 @@ The build copies `NESEmulator/nestest.nes` and `NESEmulator/roms/` into `build/`
 Run any iNES `.nes` file by passing its path:
 
 ```bash
-./build/game "build/roms/local/Super Mario Bros. 3 (USA) (Rev 1).nes"
+# Replace with your own legally obtained and compatible ROM image.
+./build/game "build/roms/local/my-legally-obtained-game.nes"
 ```
 
-```bash
-./build/game "build/roms/local/Legend of Zelda, The (USA) (Rev 1).nes"
-```
+**Input safety limitation:** the cartridge loader currently needs additional
+iNES header, payload-length and unsupported-mapper validation. Do not treat
+arbitrary downloaded ROM files as safe inputs until that work is completed.
 
 Homebrew/test ROM examples:
 
