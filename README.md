@@ -1,6 +1,6 @@
 # KairoNES
 
-**Learn the implementation:** [NES architecture and hardware walkthrough](docs/NES_ARCHITECTURE_GUIDE.md) · [Source reading order](docs/SOURCE_READING_ORDER.md)
+**Learn the implementation:** [NES architecture and hardware walkthrough](docs/NES_ARCHITECTURE_GUIDE.md) · [Source reading order](docs/SOURCE_READING_ORDER.md) · [6502/PPU bus timing and CPU flags laboratory](docs/CPU_6502_PPU_BUS_TIMING_LAB.md)
 
 KairoNES is a C++23 NES emulator project built around C++ modules. The emulator core is exposed through `NESEmulator/KairoNES.cppm`, with implementation units in `.cpp` files.
 
