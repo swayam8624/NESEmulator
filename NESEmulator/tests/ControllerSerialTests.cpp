@@ -22,6 +22,21 @@ int main()
     {
         using kairo::nes::detail::ReadControllerSerialBit;
 
+        using kairo::nes::detail::LatchControllerPair;
+
+        // CPU write to $4016 snapshots both live controllers, not only the
+        // player selected by the low address bit. $4017 is an APU write.
+        std::uint8_t sourceButtons[2]{ 0b10110000u, 0b01001010u };
+        std::uint8_t latch[2]{ 0u, 0u };
+        LatchControllerPair(latch, sourceButtons);
+        Require(latch[0] == sourceButtons[0] &&
+            latch[1] == sourceButtons[1],
+            "4016 strobe did not capture both player controllers");
+        sourceButtons[0] = 0u; // live host state may change after snapshot
+        sourceButtons[1] = 0xffu;
+        Require(latch[0] == 0b10110000u && latch[1] == 0b01001010u,
+            "Latched controller bytes incorrectly alias live host input");
+
         std::uint8_t player1 = 0b10110000u;
         std::uint8_t player2 = 0b01001010u;
 
