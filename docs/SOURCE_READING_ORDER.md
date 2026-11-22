@@ -2,6 +2,8 @@
 
 > A guided source-reading itinerary. It is not a test result or claim that every file is documented yet.
 
+**Work a hardware trace:** [CPU address mirroring, ADC/SBC flags, OAM DMA stalls and one PPU raster pixel](CPU_6502_PPU_BUS_TIMING_LAB.md). This is code-based instruction-level documentation, not a claim of cycle-exact hardware equivalence.
+
 ## How to use this guide
 
 **Source-review warnings:** Cartridge.cpp currently lacks complete iNES
