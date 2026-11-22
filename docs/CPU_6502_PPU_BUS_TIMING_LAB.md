@@ -16,7 +16,7 @@ The CPU has a 16-bit address bus, but connected hardware decides what an address
 
 **Exercise:** write RAM byte $5A through $0001 and read from $1801. Explain the identical low 11 address bits. Then compare a live PPU status read and debugger read-only request, and identify which status/latch side effects differ.
 
-**Current limitation:** Bus controller read-only inspection still shifts serial input, even when bReadOnly is requested. This needs a separate behavior fix/test, not merely a teaching comment.
+**Later source fix:** the controller path now uses [`ReadControllerSerialBit`](../NESEmulator/ControllerSerial.hpp), preserving latched bits when `bReadOnly=true`, and $4016 writes snapshot both players. [Portable controller tests](../NESEmulator/tests/ControllerSerialTests.cpp) cover interleaved debugger peeks. Hardware-accurate strobe edges and post-eight-bit reads remain independent compatibility work.
 
 ## 2. From program counter to one logical instruction
 
@@ -82,7 +82,7 @@ Sprite-zero hit is a particular raster event when nontransparent background and 
 
 Cartridge owns PRG/CHR data and a Mapper_* strategy. MMC3-style Mapper_004 bank-switches program and character memory and requests IRQ as scanlines advance. Precise hardware MMC3 IRQ behavior depends on qualified PPU A12 transitions, so a simplified scanline notification cannot be assumed cycle-accurate.
 
-**Important source-review warning:** Cartridge loader validation still needs stronger iNES input-length and unsupported mapper handling before processing arbitrary untrusted ROMs. Do not ship an open-ROM browser that assumes the parser is safe merely because a valid game loaded locally.
+**Later source fix:** [the bounded iNES1 reader](../NESEmulator/INES1Header.hpp) checks signature, supported mapper, complete optional trainer/PRG/CHR payload and CHR-RAM semantics, while [Cartridge.cpp](../NESEmulator/Cartridge.cpp) bounds mapper-produced offsets. NES 2.0 and four-screen formats remain unsupported; a passing CPU input test does not certify all cartridge gameplay or malicious-input resilience. Read [the deep boundary lab](NES_CARTRIDGE_TRUST_BOUNDARY_AND_CONTROLLER_IO_LAB.md).
 
 ## 9. Test-driven learning plan
 
