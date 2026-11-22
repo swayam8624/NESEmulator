@@ -67,6 +67,25 @@ target_link_libraries(game PRIVATE
         ${COCOA_FRAMEWORK}
 )
 
+# Headless input-contract tests compile only our original portable C++23
+# helpers. They do not require a game window, OpenGL, a commercial ROM or
+# module scanning at the target level. The GAME target itself still needs
+# the platform dependencies configured above on macOS.
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(KairoNESCartridgeInputTests
+        NESEmulator/tests/INES1CartridgeInputTests.cpp)
+    target_compile_features(KairoNESCartridgeInputTests PRIVATE cxx_std_23)
+    add_test(NAME KairoNESCartridgeInputTests
+        COMMAND KairoNESCartridgeInputTests)
+
+    add_executable(KairoNESControllerSerialTests
+        NESEmulator/tests/ControllerSerialTests.cpp)
+    target_compile_features(KairoNESControllerSerialTests PRIVATE cxx_std_23)
+    add_test(NAME KairoNESControllerSerialTests
+        COMMAND KairoNESControllerSerialTests)
+endif()
+
 add_custom_command(TARGET game POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_CURRENT_SOURCE_DIR}/NESEmulator/nestest.nes
