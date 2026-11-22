@@ -1,5 +1,7 @@
 # KairoNES
 
+**Source and test coverage:** [what was annotated, which input/controller fixes landed, and what hardware validation remains](docs/NES_TEACHING_AND_INPUT_SAFETY_PROGRESS.md). The synthetic-ROM regression runner is `bash scripts/run_nes_input_regressions.sh`; native application compatibility tests remain separate.
+
 **Learn the implementation:** [NES architecture and hardware walkthrough](docs/NES_ARCHITECTURE_GUIDE.md) · [Source reading order](docs/SOURCE_READING_ORDER.md) · [6502/PPU bus timing and CPU flags laboratory](docs/CPU_6502_PPU_BUS_TIMING_LAB.md) · [safe ROM loading, mapper offsets and controller I/O deep laboratory](docs/NES_CARTRIDGE_TRUST_BOUNDARY_AND_CONTROLLER_IO_LAB.md) · [one instruction through flags, scroll and a PPU raster pixel](docs/NES_ONE_INSTRUCTION_TO_RASTER_LAB.md)
 
 KairoNES is a C++23 NES emulator project built around C++ modules. The emulator core is exposed through `NESEmulator/KairoNES.cppm`, with implementation units in `.cpp` files.
