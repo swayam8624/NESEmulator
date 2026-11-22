@@ -28,6 +28,7 @@ module;
 #include <map>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include "ControllerSerial.hpp"
@@ -78,7 +79,7 @@ void Bus::SetSampleFrequency(uint32_t sample_rate)
 // 256 OAM bytes rather than writing a normal RAM page.
 void Bus::cpuWrite(uint16_t addr, uint8_t data)
 {	
-	if (cart->cpuWrite(addr, data))
+	if (cart && cart->cpuWrite(addr, data))
 	{
 		// The cartridge "sees all" and has the facility to veto
 		// the propagation of the bus transaction if it requires.
@@ -139,7 +140,7 @@ void Bus::cpuWrite(uint16_t addr, uint8_t data)
 uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 {
 	uint8_t data = 0x00;	
-	if (cart->cpuRead(addr, data))
+	if (cart && cart->cpuRead(addr, data))
 	{
 		// Cartridge Address Range
 	}
@@ -179,6 +180,11 @@ uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
  // A non-null and supported mapper is required before clocking.
 void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 {
+    // A null/invalid image can otherwise crash at the first mapper IRQ poll.
+    // Do not publish a half-loaded ROM into the CPU and PPU buses.
+    if (!cartridge || !cartridge->ImageValid() || !cartridge->GetMapper())
+        throw std::invalid_argument(
+            "Bus requires a fully loaded supported cartridge and mapper.");
 	// Connects cartridge to both Main Bus and CPU Bus
 	this->cart = cartridge;
 	ppu.ConnectCartridge(cartridge);
@@ -193,6 +199,7 @@ void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
  // cartridge/mapper; input and DMA transient state also matter.
 void Bus::reset()
 {
+    if (!cart) throw std::logic_error("Insert a valid cartridge before NES reset.");
 	cart->reset();
 	cpu.reset();
 	ppu.reset();
@@ -220,6 +227,7 @@ void Bus::reset()
  // This is scheduling semantics, not audio-device playback.
 bool Bus::clock()
 {
+    if (!cart) throw std::logic_error("Insert a valid cartridge before NES clock.");
 	// Clocking. The heart and soul of an emulator. The running
 	// frequency is controlled by whatever calls this function.
 	// So here we "divide" the clock as necessary and call
@@ -314,8 +322,8 @@ bool Bus::clock()
 	
 	// Check if cartridge is requesting IRQ
     // The mapper may assert a cartridge IRQ after PPU timing.
-    // Cartridge loading must reject unsupported IDs so GetMapper
-    // is never null; current loader validation needs hardening.
+    // The loader and insertCartridge now reject invalid/unsupported mapper
+    // instances. This IRQ query therefore has a real lifetime precondition.
 	if (cart->GetMapper()->irqState())
 	{
 		cart->GetMapper()->irqClear();
