@@ -1,4 +1,14 @@
 // TEACHING FILE GUIDE
+// A CPU instruction is a combination of opcode lookup, addressing mode,
+// operation and nominal cycles. Bus::clock provides CPU clock slots after
+// every three PPU ticks; CPU never directly owns PPU or cartridge memory.
+//
+// IMPORTANT: cpu6502::clock updates the instruction's logical effects
+// when cycles reach zero and then counts down remaining cycles. This is
+// *instruction-level* timing, not cycle-by-cycle bus micro-operations:
+// tests that depend on mid-instruction DMA/PPU register access can differ
+// from real hardware. Addressing modes contribute page-cross penalties,
+// and reset/IRQ/NMI establish register, stack and PC conventions.
 // 6502 instruction and addressing-mode implementation. The lookup table maps
 // opcode bytes to an addressing mode, operation and nominal cycle count.
 // Bus::cpuRead/cpuWrite are the only path to mapped hardware memory; CPU code
@@ -216,6 +226,10 @@ void cpu6502::nmi()
 // TEACHING FUNCTION: Instruction-cycle engine: fetch opcode when no cycles remain, apply addressing mode and operation, and account for additional cycles. Bus::clock calls this on CPU clock slots.
 // TEACHING API: cpu6502::clock
 // At instruction boundaries, decode opcode and perform its addressing mode and operation. Count cycles between completions; not a micro-operation-perfect 6502.
+// Fetch/decode/execute takes place at the start of the emulated
+// instruction; the remaining cycle countdown delays the next one.
+// Check branch/page-cross penalties and interrupt boundary behavior
+// against an independent trace before changing this scheduling model.
 void cpu6502::clock()
 {
 	// Each instruction requires a variable number of clock cycles to execute.
@@ -490,6 +504,9 @@ uint8_t cpu6502::ABY()
 // invalid actual address
 // TEACHING API: cpu6502::IND
 // Indirect JMP reads a two-byte pointer, including original 6502 page-boundary behavior.
+// Indirect addressing includes a 6502-specific JMP page-boundary
+// behavior. The target fetch must match hardware wrap semantics,
+/// not a generic 16-bit little-endian unaligned read.
 uint8_t cpu6502::IND()
 {
 	uint16_t ptr_lo = read(pc);
@@ -660,6 +677,9 @@ uint8_t cpu6502::fetch()
 // Called by cpu6502::clock via the opcode lookup table; fetch()/write()
 // access mapped bus memory as required. Return value signals possible extra
 // addressing-dependent cycles, not a boolean instruction success code.
+// ADC combines accumulator, operand and carry input. Overflow and
+// carry have different meanings: carry is unsigned wrap, overflow
+// signals signed two's-complement range failure. Validate all flags.
 uint8_t cpu6502::ADC()
 {
 	// Grab the data that we are adding to the accumulator
