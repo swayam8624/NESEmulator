@@ -1,4 +1,12 @@
 // TEACHING FILE GUIDE
+// The PPU is a cycle/scanline state machine: CPU-visible register accesses
+// arrive through Bus; PPU pattern/nametable accesses route through its own
+// memory map and cartridge mapper; per-dot fetches/shifters compose pixels.
+//
+// Track scrolling (coarse/fine X/Y and nametable select), background/sprite
+// priority, palette lookup, frame-complete signal and vblank NMI. A visible
+// image is not proof of accurate raster timing, sprite-zero behavior or
+// mapper scanline IRQ compatibility.
 // NES Picture Processing Unit state machine. CPU-visible PPU register access
 // arrives through Bus.cpp; background/sprite fetches access CHR through
 // Cartridge.cpp and the mapper. PPU clocks raster output into a frame buffer
@@ -253,6 +261,9 @@ kairo::Sprite& ppu2C02::GetNameTable(uint8_t i)
 // Handle CPU-visible PPU register reads forwarded by Bus::cpuRead after
 // register address mirroring. Status/data reads can have latch or buffer
 // side effects. rdonly requests debugger-safe access.
+// CPU-visible PPU registers are stateful. Status and buffered VRAM
+// reads have hardware side effects; rdonly is for debugger inspection,
+// not the same access policy as an actual 6502 memory read.
 uint8_t ppu2C02::cpuRead(uint16_t addr, bool rdonly)
 {
 	uint8_t data = 0x00;
@@ -590,6 +601,9 @@ void ppu2C02::reset()
 // Advance one PPU dot of background/sprite fetch and pixel composition.
 // Publishes screen pixels, scanline transitions and NMI state consumed by Bus.
 // Timing-sensitive games depend on scanline/dot order; use PPU test ROMs.
+// One PPU dot: advance scrolling/fetch pipelines, pixel composition,
+// sprite state, and vblank/interrupt transitions. Bus::clock calls this
+// once per master emulation tick, even when CPU is stalled by OAM DMA.
 void ppu2C02::clock()
 {
 	// As we progress through scanlines and cycles, the PPU is effectively
