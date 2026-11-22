@@ -6,7 +6,8 @@
 // CPU RAM is 2 KiB mirrored through $0000-$1FFF (mask $07FF).
 // Eight PPU registers mirror through $2000-$3FFF (mask $0007).
 // $4014 initiates a 256-byte CPU-memory-to-PPU-OAM DMA, stalling the CPU;
-// controller state is latched into serial shift registers at $4016/$4017.
+// a write to $4016 snapshots BOTH controllers; $4017 writes target the APU.
+// CPU reads at $4016/$4017 shift per-player serial state unless read-only.
 //
 // Every Bus::clock call advances one PPU tick; CPU ticks occur every
 // third bus tick unless DMA is active. NMI/mapper IRQ are then delivered,
