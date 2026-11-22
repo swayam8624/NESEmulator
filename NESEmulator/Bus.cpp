@@ -1,4 +1,19 @@
-// TEACHING MAP: NES MEMORY BUS: The CPU delegates address access to this device router. Bus owns RAM mirroring, cartridge/mapper forwarding, PPU/APU register dispatch, controller latches, OAM DMA and emulated timing. main.cpp loads the Cartridge and supplies input; cpu6502.cpp executes instructions; ppu2C02.cpp produces video state. Check DMA stalls and CPU/PPU clock ratios before modifying timing.
+// TEACHING MAP: Bus owns the emulated machine interconnect, not the
+// application window. The CPU calls cpuRead/cpuWrite for mapped devices;
+// Cartridge delegates PRG/CHR bank translation to the active Mapper;
+// PPU renders pixels and asserts NMI, while APU generates audio samples.
+//
+// CPU RAM is 2 KiB mirrored through $0000-$1FFF (mask $07FF).
+// Eight PPU registers mirror through $2000-$3FFF (mask $0007).
+// $4014 initiates a 256-byte CPU-memory-to-PPU-OAM DMA, stalling the CPU;
+// controller state is latched into serial shift registers at $4016/$4017.
+//
+// Every Bus::clock call advances one PPU tick; CPU ticks occur every
+// third bus tick unless DMA is active. NMI/mapper IRQ are then delivered,
+// and the host receives an audio-ready flag when its sample period elapses.
+// Cycle accounting, interrupt timing and register side effects determine
+// game compatibility, not only how often a visible frame is drawn.
+// See cpu6502.cpp, ppu2C02.cpp, Mapper_004.cpp and docs/SOURCE_READING_ORDER.md.
 module;
 #include <algorithm>
 #include <array>
@@ -53,6 +68,9 @@ void Bus::SetSampleFrequency(uint32_t sample_rate)
 // Decodes CPU-visible address ranges: cartridge first, then mirrored RAM, PPU
 // registers, APU, DMA and controller latch. Writes can trigger hardware effects.
 // Consumers: 6502 instructions and host debugging; collaborators: Cartridge/PPU/APU.
+// A write can mutate mapper bank/IRQ state, PPU registers, APU channels,
+// DMA scheduling or the controller latch. Callers must not assume this
+// is simply an array assignment.
 void Bus::cpuWrite(uint16_t addr, uint8_t data)
 {	
 	if (cart->cpuWrite(addr, data))
@@ -105,6 +123,10 @@ void Bus::cpuWrite(uint16_t addr, uint8_t data)
 // Decodes CPU-visible reads, including controller shift-state and PPU status.
 // bReadOnly requests inspection that should not mutate device state; the PPU
 // receives the flag. The CPU and disassembler call this interface.
+// PPU inspection receives bReadOnly, but the controller shift branch
+// below shifts regardless of this flag. A debugger that uses read-only
+// bus access at $4016/$4017 may still consume input bits: add a
+// regression test before claiming side-effect-free inspection.
 uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 {
 	uint8_t data = 0x00;	
@@ -171,6 +193,9 @@ void Bus::reset()
 // Advances PPU/APU per system tick, CPU every third tick except during OAM
 // DMA, and handles NMI/mapper IRQ. It can signal when a host audio sample is
 // ready. Main's update loop repeatedly calls this function to advance time.
+// The host determines real-time pacing, but this routine determines
+// emulated hardware order. DMA alternates CPU reads and PPU OAM writes
+// on eligible clock slots; PPU NMI and mapper IRQ reach CPU afterwards.
 bool Bus::clock()
 {
 	// Clocking. The heart and soul of an emulator. The running
