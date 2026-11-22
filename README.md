@@ -1,6 +1,6 @@
 # KairoNES
 
-**Learn the implementation:** [NES architecture and hardware walkthrough](docs/NES_ARCHITECTURE_GUIDE.md) · [Source reading order](docs/SOURCE_READING_ORDER.md) · [6502/PPU bus timing and CPU flags laboratory](docs/CPU_6502_PPU_BUS_TIMING_LAB.md)
+**Learn the implementation:** [NES architecture and hardware walkthrough](docs/NES_ARCHITECTURE_GUIDE.md) · [Source reading order](docs/SOURCE_READING_ORDER.md) · [6502/PPU bus timing and CPU flags laboratory](docs/CPU_6502_PPU_BUS_TIMING_LAB.md) · [safe ROM loading, mapper offsets and controller I/O deep laboratory](docs/NES_CARTRIDGE_TRUST_BOUNDARY_AND_CONTROLLER_IO_LAB.md)
 
 KairoNES is a C++23 NES emulator project built around C++ modules. The emulator core is exposed through `NESEmulator/KairoNES.cppm`, with implementation units in `.cpp` files.
 
@@ -43,9 +43,7 @@ Run any iNES `.nes` file by passing its path:
 ./build/game "build/roms/local/my-legally-obtained-game.nes"
 ```
 
-**Input safety limitation:** the cartridge loader currently needs additional
-iNES header, payload-length and unsupported-mapper validation. Do not treat
-arbitrary downloaded ROM files as safe inputs until that work is completed.
+**Supported input subset:** the cartridge reader now validates iNES 1.0 magic, mapper IDs, trainer/PRG/CHR lengths, CHR-RAM allocation and mapped memory bounds. It explicitly rejects NES 2.0 and four-screen mirroring until their wider metadata and hardware behavior are implemented. These guards reduce malformed-input risk; they do not certify every mapper or arbitrary ROM file as safe or compatible. Read the [full input boundary laboratory](docs/NES_CARTRIDGE_TRUST_BOUNDARY_AND_CONTROLLER_IO_LAB.md).
 
 Homebrew/test ROM examples:
 
@@ -103,6 +101,6 @@ NESEmulator/main.cpp                   App entry point and keyboard controls
 
 The [Teaching source map](docs/SOURCE_READING_ORDER.md) gives a linked reading sequence, subsystem interactions, public API boundaries, and verification questions. Begin with the public contract and entry point, trace one real operation through its implementation, and use the linked tests to distinguish expected behavior from observed evidence.
 
-**Current scope and limitations.** This is an educational emulator implementation, not a certification of NES compatibility. The current APU is partial and no automated CTest/Actions verification is published. Obtain ROMs legally. The emulator includes adapted/third-party material; a repository license cannot override upstream copyright.
+**Current scope and limitations.** This is an educational emulator implementation, not a certification of NES compatibility. The current APU is partial; two CPU-only CTest targets and a GCC/Clang workflow are now committed, but native emulator conformance and completed CI checks remain unverified. Obtain ROMs legally. The emulator includes adapted/third-party material; a repository license cannot override upstream copyright.
 
 **Learning and reuse.** Project-authored code is intended for study, modification and further development under the repository's applicable license. See [LICENSE](LICENSE) where present. Third-party libraries, borrowed source, assets, test data, models and media remain under their own terms; do not treat a top-level license as permission to redistribute restricted content.
