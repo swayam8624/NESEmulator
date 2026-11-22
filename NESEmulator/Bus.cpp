@@ -116,10 +116,13 @@ void Bus::cpuWrite(uint16_t addr, uint8_t data)
 		dma_addr = 0x00;
 		dma_transfer = true;						
 	}
-	else if (addr >= 0x4016 && addr <= 0x4017)
+	else if (addr == 0x4016)
 	{
-		// "Lock In" controller state at this time
-		controller_state[addr & 0x0001] = controller[addr & 0x0001];
+        // In this simplified controller model, $4016 latches BOTH player
+        // button bytes before successive $4016/$4017 CPU reads shift them.
+        // $4017 writes were already consumed by the APU frame counter branch;
+        // pretending the old per-address latch could reach player 2 was wrong.
+        kairo::nes::detail::LatchControllerPair(controller_state, controller);
 	}
 	
 }
