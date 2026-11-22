@@ -127,6 +127,12 @@ void cpu6502::write(uint16_t a, uint8_t d)
 // registers, status and startup cycle delay. This is not a real
 // power-on electrical simulation of uninitialized RAM; the host
 // cartridge/bus state remains a separate concern.
+// WORKED CPU BOOT TRACE (from the actual machine graph):
+// NROM with a single 16 KiB PRG bank maps CPU $FFFC through Mapper_000
+// to PRG offset $3FFC; $FFFD maps to $3FFD. If those bytes are $00 and
+// $80, the reset vector yields PC=$8000. The 8-cycle startup countdown
+// prevents the first opcode from executing on the same CPU slot as reset.
+// Bus::reset must have installed a valid Cartridge before this call.
 void cpu6502::reset()
 {
 	// Get address to set program counter to
@@ -174,6 +180,11 @@ void cpu6502::reset()
 // stack and load vector $FFFE/$FFFF. Check cycle boundary semantics:
  // Bus delivers IRQ after a clock, while instructions are executed
  // logically at their first cycle in cpu6502::clock.
+// WORKED INTERRUPT CONTRACT: when I is clear, push PC high, PC low, then
+// status to page $0100 while decrementing SP after each push; read the
+// $FFFE/$FFFF vector. RTI must reverse this stack protocol. The current
+// instruction-at-start cycle model does not reproduce all physical 6502
+// interrupt sampling edges; compare trace fixtures before modifying it.
 void cpu6502::irq()
 {
 	// If interrupts are allowed
@@ -213,6 +224,10 @@ void cpu6502::irq()
 // Non-maskable interrupt, typically asserted at PPU vblank,
  // pushes return state and loads $FFFA/$FFFB vector. Unlike IRQ,
  // the interrupt-mask flag does not prevent entering this handler.
+// PPU vblank may assert nmi; Bus::clock forwards it here even when I=1.
+// Unlike IRQ, NMI reads its vector from $FFFA/$FFFB. It still uses the
+// emulated page-one stack ($0100+SP) to save the interrupted PC/status.
+// NMI delivery and PPU dot timing are separate accuracy obligations.
 void cpu6502::nmi()
 {
 	write(0x0100 + stkp, (pc >> 8) & 0x00FF);
@@ -247,6 +262,13 @@ void cpu6502::nmi()
  // Page-cross and opcode operations may add one via bitwise AND
  // of their returned extra-cycle flags. This is instruction-level
  // functional timing, NOT hardware micro-operations on each CPU tick.
+// WORKED INSTRUCTION WALKTHROUGH: suppose PRG at PC has [$A9,$7F], the
+// opcode LDA immediate. Fetch $A9 through Bus->Cartridge->Mapper, advance PC,
+// set the lookup base cycles, let IMM() point to the $7F operand and LDA()
+// load it into A. Remaining cycles count down on later CPU slots; this source
+// changes registers at the FIRST counted slot, not on real silicon's exact
+// per-cycle bus operations. Page-cross extra cycle applies only when BOTH
+// the addressing function and instruction operation return one.
 void cpu6502::clock()
 {
 	// Each instruction requires a variable number of clock cycles to execute.
@@ -327,6 +349,10 @@ void cpu6502::clock()
 // Returns the value of a specific bit of the status register
 // TEACHING API: cpu6502::GetFlag
 // Read a selected processor status bit (C,Z,I,D,B,U,V,N) as 0/1, used by arithmetic, branches and IRQ policy.
+// FLAGS ARE ARCHITECTURAL DATA: GetFlag yields 0 or 1 from status, not
+// the raw bit mask. For ADC, Carry concerns unsigned bit 8; Overflow
+// concerns signed two's-complement range. A debugger observes these bits;
+// PHP/BRK/RTI may also expose/restack them through Bus memory.
 uint8_t cpu6502::GetFlag(FLAGS6502 f)
 {
 	return ((status & f) > 0) ? 1 : 0;
@@ -440,6 +466,10 @@ uint8_t cpu6502::ZPY()
 // Read signed 8-bit PC-relative displacement. Branch opcodes add
  // it to PC only when condition holds, including a further cycle
  // if the branch crosses a 256-byte address-page boundary.
+// RELATIVE BRANCH EXAMPLE: operand $FE is -2 (8-bit signed offset).
+// Sign-extending with $FF00 gives $FFFE; adding it to PC moves two bytes
+// backwards. BEQ/BNE add one cycle only if taken and another if the
+// resulting PC crosses a 256-byte page boundary.
 uint8_t cpu6502::REL()
 {
 	addr_rel = read(pc);
@@ -473,6 +503,10 @@ uint8_t cpu6502::ABS()
 // the page, an additional clock cycle is required
 // TEACHING API: cpu6502::ABX
 // Absolute address indexed with X; crossing a page may cost an extra CPU cycle.
+// INDEXED ADDRESS EXAMPLE: base=$12FF, X=1, effective=$1300.
+// The high-byte mismatch makes ABX return one; a read opcode that can
+// incur a page-cross penalty also returns one, so cpu6502::clock adds
+// (1 & 1)=1 extra cycle. Writes do not all use that same penalty rule.
 uint8_t cpu6502::ABX()
 {
 	uint16_t lo = read(pc);
@@ -531,6 +565,9 @@ uint8_t cpu6502::ABY()
  // if pointer low byte is $FF, the high byte is read from the
  // *same page's $00*, not the next page. This is intentional NES
  // compatibility, not a generic little-endian word load.
+// HISTORICAL JMP ($02FF) QUIRK: pointer low at $02FF, pointer high
+// fetched at $0200 (not $0300). This code intentionally reproduces the
+// original 6502 page-wrap bug. Do not replace with a generic 16-bit read.
 uint8_t cpu6502::IND()
 {
 	uint16_t ptr_lo = read(pc);
@@ -618,6 +655,10 @@ uint8_t cpu6502::IZY()
  // Cartridge mapper, PPU registers and controller reads have side
  // effects, so a fetch may be an observable bus transaction,
  // not merely a lookup into a flat 64-KiB byte array.
+// A fetched operand is a real Bus::cpuRead, potentially reaching mapper,
+// RAM, PPU, APU or controller registers. Reading an I/O address can mutate
+// hardware state: it is NOT a pure lookup. Debugger reads must call the
+// bus's separate bReadOnly path to avoid consuming controller bits.
 uint8_t cpu6502::fetch()
 {
 	if (!(lookup[opcode].addrmode == &cpu6502::IMP))
@@ -712,6 +753,11 @@ uint8_t cpu6502::fetch()
  // Zero/Negative reflect low 8 result, and Overflow detects signed
  // two's-complement overflow when same-sign inputs flip result sign.
  // C and V mean different things; verify both in exhaustive tests.
+// HAND-CALCULATED ADC: A=$7F (+127), M=$01 (+1), initial C=0.
+// 16-bit temp=$0080. New A=$80 (-128), unsigned C=0, signed V=1,
+// negative N=1, zero Z=0. The sign flipped on same-sign inputs, which
+// is the overflow condition even though unsigned addition did not carry.
+// The NES 2A03 normally ignores decimal arithmetic despite D flag state.
 uint8_t cpu6502::ADC()
 {
 	// Grab the data that we are adding to the accumulator
@@ -776,6 +822,10 @@ uint8_t cpu6502::ADC()
  // Carry indicates *no borrow* in 6502 subtraction; signed V
  // follows a different XOR condition. Do not treat carry as a
  // generic positive/negative sign bit.
+// HAND-CALCULATED SBC: A=$00, M=$01, C=1 (no input borrow).
+// $00 + (~$01 & $FF) + 1 = $00 + $FE + 1 = $00FF;
+// A=$FF, Carry=0 (borrow occurred), Negative=1, Zero=0, Overflow=0.
+// A high Carry is NOT the same as a positive signed result.
 uint8_t cpu6502::SBC()
 {
 	fetch();
@@ -899,6 +949,10 @@ uint8_t cpu6502::BCS()
 // Called by cpu6502::clock via the opcode lookup table; fetch()/write()
 // access mapped bus memory as required. Return value signals possible extra
 // addressing-dependent cycles, not a boolean instruction success code.
+// BRANCH TEST EXAMPLE: Z=1 makes BEQ taken. If PC AFTER fetching the
+// signed offset is $12FE and the displacement is +3, target is $1301:
+// one extra taken-branch cycle + another page-cross cycle. Z=0 leaves
+// PC unchanged and adds neither. See REL() for sign extension.
 uint8_t cpu6502::BEQ()
 {
 	if (GetFlag(Z) == 1)
@@ -1009,6 +1063,11 @@ uint8_t cpu6502::BPL()
  // and uses IRQ/BRK vector rather than NMI. B/U status-bit policy
  // is visible to stack reads (PHP/PLP/RTI), so inspect those opcode
  // tests before changing it.
+// BRK is a software interrupt rather than an ordinary branch: advance
+// the return PC, push return address and status on stack page $0100,
+// then use IRQ/BRK vector $FFFE/$FFFF. The B status bit is encoded in
+// the pushed status. RTI restores stack state; validate exact interrupt
+// byte/cycle ordering with an independent reference trace.
 uint8_t cpu6502::BRK()
 {
 	pc++;
