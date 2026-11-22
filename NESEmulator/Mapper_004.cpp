@@ -1,4 +1,12 @@
 // TEACHING FILE GUIDE
+// Mapper 4/MMC3 combines CPU-visible PRG bank switching, PPU-visible
+// CHR bank switching, nametable mirroring and scanline-driven IRQ state.
+// Cartridge delegates address translation here; Bus receives irqState
+// and signals the 6502. PPU scanline/A12 timing influences IRQ precision.
+//
+// This source increments the IRQ state from a scanline notification;
+// it is not a cycle-accurate MMC3 PPU A12 edge detector. Games that rely
+// on precise mid-scanline bank changes/IRQ behavior need independent tests.
 // MMC3-style bank switching and scanline IRQ behavior. CPU register writes
 // configure PRG/CHR windows; PPU rendering/scanline progress can trigger
 // mapper interrupt state observed by the CPU through Bus.
@@ -322,6 +330,9 @@ void Mapper_004::irqClear()
 // TEACHING API: Mapper_004::scanline
 // Update the IRQ counter on the PPU's scanline notification. Timing differs from cycle/A12-edge-accurate hardware and needs dedicated tests.
 // Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
+// Update the mapper IRQ latch/counter from the PPU's scanline
+// callback. This simplified interface is less precise than a true A12
+// rising-edge-qualified MMC3 counter; document any accuracy tests.
 void Mapper_004::scanline()
 {
 	if (nIRQCounter == 0)
