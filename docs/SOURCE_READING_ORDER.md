@@ -4,6 +4,13 @@
 
 ## How to use this guide
 
+**Source-review warnings:** Cartridge.cpp currently lacks complete iNES
+header/payload/unsupported-mapper validation, and Bus::cpuRead shifts
+controller state even when bReadOnly is requested for a controller
+address. These are documented limitations, not fixes in this branch.
+See [the hardware walkthrough](NES_ARCHITECTURE_GUIDE.md) and tests/manual
+trace tools before claiming untrusted-ROM safety or debugger purity.
+
 Follow one frame from user input to the CPU/PPU bus. The app uses a C++23 module interface; its implementation units share `module Kairo.NES;`.
 
 Read each phase in order. Every link goes to a source file or directory in this repository. For a directory, inspect its public interface and then its implementation files. After each phase, identify the caller, the state it owns, the inputs it validates, and its observable outputs.
