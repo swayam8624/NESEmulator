@@ -1,6 +1,6 @@
 # KairoNES: a guided journey from a ROM to a pixel
 
-This guide is a teaching companion to [the ordered source map](SOURCE_READING_ORDER.md). Start from the code, return to this narrative when a hardware abstraction is unfamiliar, and then inspect the referenced methods. The examples describe **the implementation in this repository**, not a promise of complete, cycle-accurate NES compatibility.
+This guide is a teaching companion to [the ordered source map](SOURCE_READING_ORDER.md) and the [fully worked instruction-to-raster trace](NES_ONE_INSTRUCTION_TO_RASTER_LAB.md). Start from the code, return to this narrative when a hardware abstraction is unfamiliar, and then inspect the referenced methods. The examples describe **the implementation in this repository**, not a promise of complete, cycle-accurate NES compatibility.
 
 ## 1. What is being emulated?
 
