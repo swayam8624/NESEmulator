@@ -1,0 +1,46 @@
+name: Portable NES input safety
+
+# Native macOS C++23 module/game builds remain separate. This lane uses
+# generated, freely distributable ROM bytes and no graphics APIs or ROM assets.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "NESEmulator/INES1Header.hpp"
+      - "NESEmulator/ControllerSerial.hpp"
+      - "NESEmulator/Cartridge.cpp"
+      - "NESEmulator/Bus.cpp"
+      - "NESEmulator/tests/INES1CartridgeInputTests.cpp"
+      - "NESEmulator/tests/ControllerSerialTests.cpp"
+      - "scripts/run_nes_input_regressions.sh"
+      - ".github/workflows/cpu-nes-input-guards.yml"
+  pull_request:
+    paths:
+      - "NESEmulator/INES1Header.hpp"
+      - "NESEmulator/ControllerSerial.hpp"
+      - "NESEmulator/Cartridge.cpp"
+      - "NESEmulator/Bus.cpp"
+      - "NESEmulator/tests/INES1CartridgeInputTests.cpp"
+      - "NESEmulator/tests/ControllerSerialTests.cpp"
+      - "scripts/run_nes_input_regressions.sh"
+      - ".github/workflows/cpu-nes-input-guards.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu-input-regressions:
+    name: "${{ matrix.compiler }} / ROM input and controller semantics"
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and run independent NES input regressions
+        shell: bash
+        env:
+          CXX: ${{ matrix.compiler }}
+        run: bash scripts/run_nes_input_regressions.sh
