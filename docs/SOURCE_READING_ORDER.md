@@ -2,7 +2,7 @@
 
 > A guided source-reading itinerary. It is not a test result or claim that every file is documented yet.
 
-**Work a hardware trace:** [CPU address mirroring, ADC/SBC flags, OAM DMA stalls and one PPU raster pixel](CPU_6502_PPU_BUS_TIMING_LAB.md). First read the new [iNES cartridge trust boundary and two-player controller I/O laboratory](NES_CARTRIDGE_TRUST_BOUNDARY_AND_CONTROLLER_IO_LAB.md) to understand which untrusted bytes and state reach the CPU/PPU hardware map. Both are code-based lessons, not claims of cycle-exact equivalence.
+**Work a hardware trace:** first read the [iNES cartridge trust boundary and two-player controller I/O lab](NES_CARTRIDGE_TRUST_BOUNDARY_AND_CONTROLLER_IO_LAB.md), then [one instruction through reset, 6502 flags, PPU shifters and a raster pixel](NES_ONE_INSTRUCTION_TO_RASTER_LAB.md), then the [previous bus/DMA and CPU flags laboratory](CPU_6502_PPU_BUS_TIMING_LAB.md). These are implementation-based lessons, not proofs of cycle-exact hardware equivalence.
 
 ## How to use this guide
 
@@ -34,6 +34,8 @@ Read the [portable checked iNES1 header/payload parser](../NESEmulator/INES1Head
 8. [`NESEmulator/Mapper_066.cpp`](../NESEmulator/Mapper_066.cpp)
 
 ## 3. Execution hardware
+
+**Cross-file teaching continuation:** [one NROM instruction, ADC flags, PPU register latches, pixel shifters and MMC3 IRQ](NES_ONE_INSTRUCTION_TO_RASTER_LAB.md), with 33 new deep source comments across `cpu6502.cpp`, `ppu2C02.cpp` and `Mapper_004.cpp`.
 
 The [controller serial helper](../NESEmulator/ControllerSerial.hpp) and [CPU test](../NESEmulator/tests/ControllerSerialTests.cpp) explain debugger read-only purity and the dual-player $4016 snapshot before reading Bus::cpuRead/cpuWrite.
 
