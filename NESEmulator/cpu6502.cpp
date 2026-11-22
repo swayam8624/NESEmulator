@@ -123,6 +123,10 @@ void cpu6502::write(uint16_t a, uint8_t d)
 // TEACHING FUNCTION: Reinitialize processor status/registers and load the reset vector through Bus memory mapping. Restart is observable in CPU state and instruction trace.
 // TEACHING API: cpu6502::reset
 // Load PC from the reset vector at $FFFC/$FFFD and restore CPU registers, flags and cycle delay.
+// Read the reset vector ($FFFC/$FFFD) via Bus and initialize PC,
+// registers, status and startup cycle delay. This is not a real
+// power-on electrical simulation of uninitialized RAM; the host
+// cartridge/bus state remains a separate concern.
 void cpu6502::reset()
 {
 	// Get address to set program counter to
@@ -165,6 +169,11 @@ void cpu6502::reset()
 // set to the program counter.
 // TEACHING API: cpu6502::irq
 // Service a maskable interrupt if I is clear; save PC/status to the CPU stack, then jump through $FFFE/$FFFF.
+// Maskable IRQ enters through mapper/APU/bus scheduling. It is
+// ignored when I is set; otherwise push PC and status to page-$0100
+// stack and load vector $FFFE/$FFFF. Check cycle boundary semantics:
+ // Bus delivers IRQ after a clock, while instructions are executed
+ // logically at their first cycle in cpu6502::clock.
 void cpu6502::irq()
 {
 	// If interrupts are allowed
@@ -201,6 +210,9 @@ void cpu6502::irq()
 // form location 0xFFFA.
 // TEACHING API: cpu6502::nmi
 // Service the unmaskable interrupt signaled by PPU through Bus; save execution context and jump through $FFFA/$FFFB.
+// Non-maskable interrupt, typically asserted at PPU vblank,
+ // pushes return state and loads $FFFA/$FFFB vector. Unlike IRQ,
+ // the interrupt-mask flag does not prevent entering this handler.
 void cpu6502::nmi()
 {
 	write(0x0100 + stkp, (pc >> 8) & 0x00FF);
@@ -230,6 +242,11 @@ void cpu6502::nmi()
 // instruction; the remaining cycle countdown delays the next one.
 // Check branch/page-cross penalties and interrupt boundary behavior
 // against an independent trace before changing this scheduling model.
+// Execute opcode/addressing operation *when cycles reaches zero*,
+ // then count down the nominal remaining instruction cycles.
+ // Page-cross and opcode operations may add one via bitwise AND
+ // of their returned extra-cycle flags. This is instruction-level
+ // functional timing, NOT hardware micro-operations on each CPU tick.
 void cpu6502::clock()
 {
 	// Each instruction requires a variable number of clock cycles to execute.
@@ -420,6 +437,9 @@ uint8_t cpu6502::ZPY()
 // you cant directly branch to any address in the addressable range.
 // TEACHING API: cpu6502::REL
 // Relative branch displacement: sign-extend the next byte for PC-relative control flow.
+// Read signed 8-bit PC-relative displacement. Branch opcodes add
+ // it to PC only when condition holds, including a further cycle
+ // if the branch crosses a 256-byte address-page boundary.
 uint8_t cpu6502::REL()
 {
 	addr_rel = read(pc);
@@ -507,6 +527,10 @@ uint8_t cpu6502::ABY()
 // Indirect addressing includes a 6502-specific JMP page-boundary
 // behavior. The target fetch must match hardware wrap semantics,
 /// not a generic 16-bit little-endian unaligned read.
+// 6502 JMP indirect reproduces the hardware page-wrap quirk:
+ // if pointer low byte is $FF, the high byte is read from the
+ // *same page's $00*, not the next page. This is intentional NES
+ // compatibility, not a generic little-endian word load.
 uint8_t cpu6502::IND()
 {
 	uint16_t ptr_lo = read(pc);
@@ -590,6 +614,10 @@ uint8_t cpu6502::IZY()
 // TEACHING FUNCTION: Resolve operand data after the selected addressing mode. Instructions should use this centralized fetch rather than bypassing Bus mapping.
 // TEACHING API: cpu6502::fetch
 // Retrieve the addressed operand through Bus except in implied/accumulator mode. Arithmetic and logic operations share this helper.
+// Read operand only for addressing modes other than implied.
+ // Cartridge mapper, PPU registers and controller reads have side
+ // effects, so a fetch may be an observable bus transaction,
+ // not merely a lookup into a flat 64-KiB byte array.
 uint8_t cpu6502::fetch()
 {
 	if (!(lookup[opcode].addrmode == &cpu6502::IMP))
@@ -680,6 +708,10 @@ uint8_t cpu6502::fetch()
 // ADC combines accumulator, operand and carry input. Overflow and
 // carry have different meanings: carry is unsigned wrap, overflow
 // signals signed two's-complement range failure. Validate all flags.
+// A+M+C uses 16-bit temporary storage to detect unsigned carry;
+ // Zero/Negative reflect low 8 result, and Overflow detects signed
+ // two's-complement overflow when same-sign inputs flip result sign.
+ // C and V mean different things; verify both in exhaustive tests.
 uint8_t cpu6502::ADC()
 {
 	// Grab the data that we are adding to the accumulator
@@ -740,6 +772,10 @@ uint8_t cpu6502::ADC()
 // Called by cpu6502::clock via the opcode lookup table; fetch()/write()
 // access mapped bus memory as required. Return value signals possible extra
 // addressing-dependent cycles, not a boolean instruction success code.
+// Implement A-M-(1-C) as A + onesComplement(M) + C.
+ // Carry indicates *no borrow* in 6502 subtraction; signed V
+ // follows a different XOR condition. Do not treat carry as a
+ // generic positive/negative sign bit.
 uint8_t cpu6502::SBC()
 {
 	fetch();
@@ -969,6 +1005,10 @@ uint8_t cpu6502::BPL()
 // Called by cpu6502::clock via the opcode lookup table; fetch()/write()
 // access mapped bus memory as required. Return value signals possible extra
 // addressing-dependent cycles, not a boolean instruction success code.
+// Software interrupt BRK pushes the appropriate return PC/status
+ // and uses IRQ/BRK vector rather than NMI. B/U status-bit policy
+ // is visible to stack reads (PHP/PLP/RTI), so inspect those opcode
+ // tests before changing it.
 uint8_t cpu6502::BRK()
 {
 	pc++;
