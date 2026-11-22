@@ -14,6 +14,18 @@
 
 namespace kairo::nes::detail
 {
+    // A write to CPU $4016 snapshots BOTH player button bytes in this
+    // emulator's simplified latch model. CPU $4017 writes belong to the
+    // APU frame counter; they must not be mistaken for a player-2 latch.
+    // Real NES strobe-high and falling-edge timing is still future work.
+    inline void LatchControllerPair(
+        std::uint8_t (&shiftRegisters)[2],
+        const std::uint8_t (&liveButtons)[2]) noexcept
+    {
+        shiftRegisters[0] = liveButtons[0];
+        shiftRegisters[1] = liveButtons[1];
+    }
+
     [[nodiscard]] inline std::uint8_t ReadControllerSerialBit(
         std::uint8_t& latchedButtons, bool readOnly) noexcept
     {
