@@ -99,10 +99,12 @@ bool Cartridge::ImageValid()
 
 // TEACHING API: Cartridge::cpuRead
 // For an address sent by Bus::cpuRead, ask the mapper for a PRG bank offset
-// or a mapper-supplied value (0xFFFFFFFF sentinel). On an unmapped address,
-// return false so the Bus can try other devices.
+// or a mapper-supplied value (0xFFFFFFFF sentinel). Reject any invalid
+// mapper offset BEFORE indexing the PRG vector (bank registers are mutable).
+// On an unmapped address, return false so the Bus can try other devices.
 bool Cartridge::cpuRead(uint16_t addr, uint8_t &data)
 {
+    if (!pMapper) return false; // invalid or unsupported cartridge
 	uint32_t mapped_addr = 0;
 	if (pMapper->cpuMapRead(addr, mapped_addr, data))
 	{
@@ -114,7 +116,8 @@ bool Cartridge::cpuRead(uint16_t addr, uint8_t &data)
 		else
 		{
 			// Mapper has produced an offset into cartridge bank memory
-			data = vPRGMemory[mapped_addr];
+			if (mapped_addr >= vPRGMemory.size()) return false;
+            data = vPRGMemory[mapped_addr];
 		}
 		return true;
 	}
@@ -125,8 +128,10 @@ bool Cartridge::cpuRead(uint16_t addr, uint8_t &data)
 // TEACHING API: Cartridge::cpuWrite
 // For a Bus write, delegate mapper register/bank handling before optional
 // PRG-memory access. Some writes update mapper state rather than ROM bytes.
+// An out-of-range mapper result cannot write past the PRG storage vector.
 bool Cartridge::cpuWrite(uint16_t addr, uint8_t data)
 {
+    if (!pMapper) return false;
 	uint32_t mapped_addr = 0;
 	if (pMapper->cpuMapWrite(addr, mapped_addr, data))
 	{
@@ -138,7 +143,8 @@ bool Cartridge::cpuWrite(uint16_t addr, uint8_t data)
 		else
 		{
 			// Mapper has produced an offset into cartridge bank memory
-			vPRGMemory[mapped_addr] = data;
+			if (mapped_addr >= vPRGMemory.size()) return false;
+            vPRGMemory[mapped_addr] = data;
 		}
 		return true;
 	}
@@ -151,10 +157,12 @@ bool Cartridge::cpuWrite(uint16_t addr, uint8_t data)
 // active mapper. The caller is ppu2C02::ppuRead, not the host display.
 bool Cartridge::ppuRead(uint16_t addr, uint8_t & data)
 {
+    if (!pMapper) return false;
 	uint32_t mapped_addr = 0;
 	if (pMapper->ppuMapRead(addr, mapped_addr))
 	{
-		data = vCHRMemory[mapped_addr];
+		if (mapped_addr >= vCHRMemory.size()) return false;
+        data = vCHRMemory[mapped_addr];
 		return true;
 	}
 	else
@@ -166,10 +174,12 @@ bool Cartridge::ppuRead(uint16_t addr, uint8_t & data)
 // The PPU drives this operation; bank mapping is mapper-controlled.
 bool Cartridge::ppuWrite(uint16_t addr, uint8_t data)
 {
+    if (!pMapper) return false;
 	uint32_t mapped_addr = 0;
 	if (pMapper->ppuMapWrite(addr, mapped_addr))
 	{
-		vCHRMemory[mapped_addr] = data;
+		if (mapped_addr >= vCHRMemory.size()) return false;
+        vCHRMemory[mapped_addr] = data;
 		return true;
 	}
 	else
@@ -193,6 +203,7 @@ void Cartridge::reset()
 // from the ROM header. ppu2C02 uses this to map $2000-$2FFF tables.
 MIRROR Cartridge::Mirror()
 {
+    if (!pMapper) return hw_mirror; // invalid image, no mapper register
 	MIRROR m = pMapper->mirror();
 	if (m == MIRROR::HARDWARE)
 	{
