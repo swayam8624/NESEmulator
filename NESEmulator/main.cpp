@@ -154,7 +154,9 @@ private:
 	}
 
 	// TEACHING API: void PollController(
-	// Translate arrow/WASD and action buttons into NES controller bits. Bus latches/shifts this state through memory-mapped $4016/$4017.
+	// Translate arrow/WASD and action buttons into NES controller bytes. Writes
+    // to $4016 snapshot BOTH controllers; CPU reads at $4016/$4017 shift the
+    // corresponding byte, while debugger-only reads do not consume it.
 	void PollController()
 	{
 		nes.controller[0] = 0x00;
@@ -193,7 +195,9 @@ private:
 	}
 
 	// TEACHING API: bool OnUserCreate()
-	// PixelGameEngine lifecycle callback: find a ROM, construct Cartridge, attach it through Bus and reset hardware before the first frame. ImageValid currently has known validation gaps.
+	// PixelGameEngine startup constructs a cartridge, rejects invalid/unsupported
+    // iNES1 input via ImageValid, attaches the validated mapper to Bus and resets
+    // CPU/PPU before the first frame. NES2 and four-screen ROMs are rejected.
 	bool OnUserCreate() override
 	{
 		std::vector<std::string> romPaths;
