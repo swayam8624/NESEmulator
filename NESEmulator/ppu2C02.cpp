@@ -264,6 +264,10 @@ kairo::Sprite& ppu2C02::GetNameTable(uint8_t i)
 // CPU-visible PPU registers are stateful. Status and buffered VRAM
 // reads have hardware side effects; rdonly is for debugger inspection,
 // not the same access policy as an actual 6502 memory read.
+// CPU-facing PPU register reads: read-only debugger mode avoids
+// side effects, while live reads may clear vblank/address latch or
+// return buffered VRAM data. Bus maps CPU $2000-$3FFF onto these
+// eight registers with addr & 7. This is *not* PPU pattern memory.
 uint8_t ppu2C02::cpuRead(uint16_t addr, bool rdonly)
 {
 	uint8_t data = 0x00;
@@ -372,6 +376,10 @@ uint8_t ppu2C02::cpuRead(uint16_t addr, bool rdonly)
 // Handle CPU-visible control, scrolling, OAM and video-memory registers.
 // Bus maps $2000-$3FFF onto eight PPU registers; internal write latches
 // combine sequential scroll/address writes.
+// CPU-visible control/mask/scroll/address/OAM writes alter future
+// raster behavior. Scroll and address registers use shared loopy
+// latches; two writes can have different meaning depending on
+// the current address_latch phase.
 void ppu2C02::cpuWrite(uint16_t addr, uint8_t data)
 {
 	switch (addr)
@@ -448,6 +456,10 @@ void ppu2C02::cpuWrite(uint16_t addr, uint8_t data)
 // Decode PPU address space: CHR pattern tables through cartridge mapper,
 // nametables via Cartridge::Mirror, and palette RAM with PPU mirroring.
 // This is the pixel pipeline's memory read, not a CPU address read.
+// PPU address bus sees CHR via cartridge mapper first, then
+// internal nametable/palette RAM with mirroring rules. This is
+// distinct from CPU address map; mapper bank switching affects
+// which pattern-table bytes appear at a given PPU address.
 uint8_t ppu2C02::ppuRead(uint16_t addr, bool rdonly)
 {
 	uint8_t data = 0x00;
@@ -509,6 +521,9 @@ uint8_t ppu2C02::ppuRead(uint16_t addr, bool rdonly)
 // Decode writes to CHR (if mapper allows), nametable and palette storage.
 // Writes can affect subsequent scanline pixels; the cartridge chooses whether
 // pattern memory is ROM or RAM.
+// Writes to pattern/nametable/palette space follow cartridge
+// mapper/CHR-RAM policy and PPU memory mirroring. Do not use
+// CPU's $2000 register mask for a PPU VRAM address.
 void ppu2C02::ppuWrite(uint16_t addr, uint8_t data)
 {
 	addr &= 0x3FFF;
@@ -572,6 +587,9 @@ void ppu2C02::ConnectCartridge(const std::shared_ptr<Cartridge>& cartridge)
 // TEACHING API: ppu2C02::reset
 // Reset PPU registers, latches, scroll address and raster timing state.
 // Bus::reset coordinates this with CPU/APU/mapper reset.
+// Reset scanline/cycle pipelines, scroll/address latches, sprite
+// shifters, status and frame-complete/NMI state. The active
+// cartridge CHR data and its mapper remain owned externally.
 void ppu2C02::reset()
 {
 	fine_x = 0x00;
@@ -604,6 +622,11 @@ void ppu2C02::reset()
 // One PPU dot: advance scrolling/fetch pipelines, pixel composition,
 // sprite state, and vblank/interrupt transitions. Bus::clock calls this
 // once per master emulation tick, even when CPU is stalled by OAM DMA.
+// One dot of the PPU raster state machine. Background tile fetch,
+ // fine/coarse scrolling, 8-pixel pattern shifters, sprite
+ // evaluation, priority compositing and vertical-blank/NMI
+ // transitions depend on the *specific cycle and scanline*.
+ // A visible image alone cannot prove sprite-zero/scanline timing.
 void ppu2C02::clock()
 {
 	// As we progress through scanlines and cycles, the PPU is effectively
@@ -617,6 +640,9 @@ void ppu2C02::clock()
 
 	// ==============================================================================
 	// Increment the background tile "pointer" one tile/column horizontally
+    // Coarse-X counts 8-pixel tiles, not individual pixels.
+    // Crossing tile column 31 wraps X and toggles horizontal
+    // nametable. Fine-X pixel scroll is handled by shifters.
 	auto IncrementScrollX = [&]()
 	{
 		// Note: pixel perfect scrolling horizontally is handled by the 
@@ -646,6 +672,9 @@ void ppu2C02::clock()
 
 	// ==============================================================================
 	// Increment the background tile "pointer" one scanline vertically
+    // Fine-Y advances within an 8-row tile; after row 7 the
+    // coarse-Y and vertical nametable bits must wrap according
+    // to the 30 visible rows rather than a naive 32-row grid.
 	auto IncrementScrollY = [&]()
 	{
 		// Incrementing vertically is more complicated. The visible nametable
@@ -1288,6 +1317,11 @@ void ppu2C02::clock()
 	}
 
 	// Foreground =============================================================
+    // Sprite evaluation produces up to a limited number of active
+    // scanline sprites. Their shifters contribute 2-bit palette
+    // indices; earlier nontransparent sprites take priority.
+    // Background/sprite priority and sprite-zero hit are decided
+    // only after both pixel candidates are known.
 	uint8_t fg_pixel = 0x00;   // The 2-bit pixel to be rendered
 	uint8_t fg_palette = 0x00; // The 3-bit index of the palette the pixel indexes
 	uint8_t fg_priority = 0x00;// A bit of the sprite attribute indicates if its
