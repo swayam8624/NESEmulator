@@ -71,6 +71,10 @@ void Bus::SetSampleFrequency(uint32_t sample_rate)
 // A write can mutate mapper bank/IRQ state, PPU registers, APU channels,
 // DMA scheduling or the controller latch. Callers must not assume this
 // is simply an array assignment.
+// Bus writes route through the cartridge mapper first, then RAM/PPU/
+// APU/controller/DMA registers. CPU address $0000-$1FFF mirrors only
+// 2 KiB RAM; $2000-$3FFF mirrors 8 PPU registers. $4014 schedules
+// 256 OAM bytes rather than writing a normal RAM page.
 void Bus::cpuWrite(uint16_t addr, uint8_t data)
 {	
 	if (cart->cpuWrite(addr, data))
@@ -127,6 +131,11 @@ void Bus::cpuWrite(uint16_t addr, uint8_t data)
 // below shifts regardless of this flag. A debugger that uses read-only
 // bus access at $4016/$4017 may still consume input bits: add a
 // regression test before claiming side-effect-free inspection.
+// Reads are device *operations*: PPU status may clear vblank,
+// controller shift registers consume serial bits, and cartridge
+// mapper may translate a PRG bank. Debug bReadOnly is not fully
+// respected by controller reads in this implementation, so a
+// debugger may change input state merely by inspecting $4016.
 uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 {
 	uint8_t data = 0x00;	
@@ -164,6 +173,9 @@ uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 // Wires an already-created cartridge into the machine and PPU so both CPU
 // program reads and PPU pattern fetches use the same mapper/bank configuration.
 // Call before reset/clock; ownership uses std::shared_ptr.
+// Attach the same mapper-backed Cartridge to the CPU bus and PPU
+// so PRG (CPU), CHR (PPU) and mapper IRQ state stay consistent.
+ // A non-null and supported mapper is required before clocking.
 void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 {
 	// Connects cartridge to both Main Bus and CPU Bus
@@ -175,6 +187,9 @@ void Bus::insertCartridge(const std::shared_ptr<Cartridge>& cartridge)
 // TEACHING API: Bus::reset
 // Resets emulated devices, counters and DMA state; ROM contents remain owned
 // by Cartridge. See CPU reset-vector reads and PPU reset state for consequences.
+// Reinitialize CPU/APU/PPU clocked state for a new emulation run.
+ // Resetting devices is not equivalent to constructing a different
+ // cartridge/mapper; input and DMA transient state also matter.
 void Bus::reset()
 {
 	cart->reset();
@@ -196,6 +211,12 @@ void Bus::reset()
 // The host determines real-time pacing, but this routine determines
 // emulated hardware order. DMA alternates CPU reads and PPU OAM writes
 // on eligible clock slots; PPU NMI and mapper IRQ reach CPU afterwards.
+// One *master PPU timing tick*. PPU and APU clock every call; CPU
+// consumes a slot every third tick unless OAM DMA steals it.
+ // DMA alternates bus read and PPU OAM write across slots, with a
+ // dummy alignment phase. After clocks, audio sample readiness is
+ // calculated and PPU NMI / mapper IRQ requests reach the CPU.
+ // This is scheduling semantics, not audio-device playback.
 bool Bus::clock()
 {
 	// Clocking. The heart and soul of an emulator. The running
@@ -215,6 +236,9 @@ bool Bus::clock()
 	// The CPU runs 3 times slower than the PPU so we only call its
 	// clock() function every 3 times this function is called. We
 	// have a global counter to keep track of this.
+    // NTSC-style 3:1 PPU-to-CPU scheduling is represented as one
+    // CPU slot per three Bus::clock calls. Mid-instruction CPU bus
+    // micro-operations are not modeled cycle-by-cycle by cpu6502.
 	if (nSystemClockCounter % 3 == 0)
 	{
 		// Is the system performing a DMA transfer form CPU memory to 
@@ -288,6 +312,9 @@ bool Bus::clock()
 
 	
 	// Check if cartridge is requesting IRQ
+    // The mapper may assert a cartridge IRQ after PPU timing.
+    // Cartridge loading must reject unsupported IDs so GetMapper
+    // is never null; current loader validation needs hardening.
 	if (cart->GetMapper()->irqState())
 	{
 		cart->GetMapper()->irqClear();
