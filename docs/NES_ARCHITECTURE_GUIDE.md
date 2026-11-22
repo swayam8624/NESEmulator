@@ -64,7 +64,7 @@ The PPU can request a nonmaskable interrupt (NMI), commonly at vertical blank. A
 - **MMC3 / mapper 4:** several PRG/CHR windows and IRQ counter. The code has incomplete PRG-RAM protection handling.
 - **GxROM / mapper 66:** select both PRG and CHR banks with a control byte.
 
-The mapper gives the cartridge either a translated byte offset, an internally handled value, or an "unmapped" signal. It should never return an offset outside allocated PRG/CHR memory. **Known risk**: the loader currently marks unsupported mappers valid and lacks adequate read/size checks; use untrusted ROMs only after this is fixed.
+The mapper gives the cartridge either a translated byte offset, an internally handled value, or an "unmapped" signal. It should never return an offset outside allocated PRG/CHR memory. **Later source fix:** the loader now validates a bounded iNES 1.0 header and complete trainer/PRG/CHR payload, rejects unknown mappers and NES 2.0/four-screen formats, and bounds every mapper-produced PRG/CHR offset before indexing. See [the input and controller laboratory](NES_CARTRIDGE_TRUST_BOUNDARY_AND_CONTROLLER_IO_LAB.md). Mapper accuracy and full hostile-file guarantees still require dedicated native tests.
 
 ## 5. PPU, sprites and display are different layers
 
@@ -95,10 +95,10 @@ The adapted PixelGameEngine supplies `OnUserCreate`/`OnUserUpdate` lifecycle met
 5. **APU**: register timing, channel gating, sampling stability and callback/CPU synchronization.
 6. **Host**: ROM selection, input mapping, pause, frame step and clean exit.
 
-The repository currently does not provide complete automated NES validation. A committed test ROM is not the same as an executed and compared regression test. Build instructions and ROM usage are in [README](../README.md).
+The repository now contains two portable CTest regressions and a GCC/Clang CI configuration for iNES input/controller behavior, but still does not provide complete automated NES hardware validation. A committed test ROM is not the same as an executed and compared regression test. Build instructions and ROM usage are in [README](../README.md).
 
 ## 9. Suggested hands-on exercises
 
-First, add a bounded ROM-header validator and table-driven tests without changing emulation timing. Next, instrument a CPU trace showing PC, mnemonic, operand, A/X/Y, flags and cycles. Then write focused mapper tests and compare CPU-visible and PPU-visible bank bytes. Finally inspect one frame's tile/palette changes and one audio waveform under controlled register writes.
+The bounded ROM-header/payload validator and portable input tests have now been added. For the next pass, Next, instrument a CPU trace showing PC, mnemonic, operand, A/X/Y, flags and cycles. Then write focused mapper tests and compare CPU-visible and PPU-visible bank bytes. Finally inspect one frame's tile/palette changes and one audio waveform under controlled register writes.
 
 For each exercise, ask what **physical behavior** is being approximated, what **API** models it, what **other file** consumes it, and what **test** could prove the expected behavior. That question is the reason the files are ordered this way.
