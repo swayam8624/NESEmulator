@@ -6,6 +6,8 @@
 
 ## How to use this guide
 
+**Teaching/verification ledger:** [NES input-safety and instruction-to-raster source coverage](NES_TEACHING_AND_INPUT_SAFETY_PROGRESS.md), with explicit CPU/PPU/mapper limitations and native test gates.
+
 **Correctness updates:** [the cartridge/input boundary laboratory](NES_CARTRIDGE_TRUST_BOUNDARY_AND_CONTROLLER_IO_LAB.md) now explains the source-level iNES 1.0 header/payload validation, unsupported mapper/NES 2.0 rejection, PRG/CHR bounds, two-player $4016 latch and read-only debugger controller peeks. Portable C++23 tests and a GCC/Clang CI workflow are committed. These targeted guards do not establish general untrusted-ROM or cycle-accurate hardware compatibility.
 
 Follow one frame from user input to the CPU/PPU bus. The app uses a C++23 module interface; its implementation units share `module Kairo.NES;`.
