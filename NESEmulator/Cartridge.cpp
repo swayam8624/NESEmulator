@@ -3,12 +3,11 @@
 // The host owns the ROM filename, Cartridge chooses a Mapper_* subclass,
 // and Mapper translation determines which PRG/CHR bank a bus address reaches.
 //
-// WARNING FROM SOURCE REVIEW: header and payload read results are not
-// consistently checked, and the mapper switch has no explicit unsupported
-// case before setting bImageValid=true. In particular, accepting a header
-// does not guarantee pMapper is non-null; later bus IRQ access dereferences
-// GetMapper(). This must be repaired and tested separately from teaching
-// comments before accepting arbitrary user-supplied ROMs as safe.
+// INPUT SAFETY: INES1Header.hpp validates magic/format/mapper/mirroring and
+// requires exact trainer, PRG and CHR payload lengths. Unsupported NES 2.0
+// images are rejected deliberately until extended bank/mapper support exists.
+// Every mapper-produced PRG/CHR offset is bounds-checked below. This is a
+// safer subset of NES media formats, NOT a claim of full emulator compatibility.
 //
 // The top-level repository license does not confer redistribution rights
 // over commercial ROM data or third-party emulator/pixel-engine source.
@@ -28,110 +27,60 @@ module;
 #include <sstream>
 #include <string>
 #include <vector>
+#include <utility>
+#include "INES1Header.hpp"
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
-// Read the ROM header, select a supported mapper and allocate PRG/CHR. Header read lengths and
-// allocation bounds are correctness and security preconditions.
 // TEACHING API: Cartridge::Cartridge
-// Loads and interprets ROM metadata, allocates PRG/CHR storage, and chooses
-// a Mapper_* implementation. Bus and PPU later read only through this object.
-// IMPORTANT: current code does not consistently validate short reads, header
-// signature or unsupported mapper IDs; a valid flag is not yet a safety proof.
-// Parse iNES header, optional trainer, PRG/CHR banks and mapper choice.
-// Read failures, truncated buffers and unknown mapper IDs must reject
-// the cartridge; current implementation has incomplete validation.
+// Read a bounded, explicitly supported iNES1 image into owned PRG/CHR bytes.
+// Validate header and complete input before constructing a Mapper object.
+// No image becomes valid until a supported mapper is actually created.
+// A header with zero CHR ROM banks produces 8 KiB writable CHR RAM, without
+// consuming any phantom CHR bytes from disk. The host still checks ImageValid.
 Cartridge::Cartridge(const std::string& sFileName)
 {
-	// iNES Format Header
-	struct sHeader
-	{
-		char name[4];
-		uint8_t prg_rom_chunks;
-		uint8_t chr_rom_chunks;
-		uint8_t mapper1;
-		uint8_t mapper2;
-		uint8_t prg_ram_size;
-		uint8_t tv_system1;
-		uint8_t tv_system2;
-		char unused[5];
-	} header;
+    bImageValid = false;
+    std::ifstream input(sFileName, std::ios::binary);
+    if (!input) return; // existing API: missing files are invalid, not fatal
 
-	bImageValid = false;
+    kairo::nes::detail::INES1RomPayload image;
+    try
+    {
+        // Validate signature, format, supported mapper and PRG/CHR sizes
+        // before allocating banks, then require a complete optional trainer,
+        // PRG ROM and CHR ROM payload. Zero CHR banks means 8 KiB of zeroed
+        // CHR RAM; there are no CHR bytes to consume from the ROM file.
+        image = kairo::nes::detail::ReadINES1Rom(input);
+    }
+    catch (const std::invalid_argument&)
+    {
+        // Malformed/unsupported ROMs retain ImageValid()==false. The host
+        // currently tries several cartridge paths and checks this flag.
+        // std::bad_alloc or other unexpected host errors still propagate.
+        return;
+    }
 
-	std::ifstream ifs;
-	ifs.open(sFileName, std::ifstream::binary);
-	if (ifs.is_open())
-	{
-		// Read file header
-		ifs.read((char*)&header, sizeof(sHeader));
+    nMapperID = image.Header.Mapper;
+    nPRGBanks = image.Header.PRGBanks;
+    nCHRBanks = image.Header.CHRBanks;
+    hw_mirror = image.Header.VerticalMirroring ? VERTICAL : HORIZONTAL;
+    vPRGMemory = std::move(image.PRG);
+    vCHRMemory = std::move(image.CHR);
 
-		// If a "trainer" exists we just need to read past
-		// it before we get to the good stuff
-		if (header.mapper1 & 0x04)
-			ifs.seekg(512, std::ios_base::cur);
-
-		// Determine Mapper ID
-		nMapperID = ((header.mapper2 >> 4) << 4) | (header.mapper1 >> 4);
-		hw_mirror = (header.mapper1 & 0x01) ? VERTICAL : HORIZONTAL;
-
-		// "Discover" File Format
-		uint8_t nFileType = 1;
-		if ((header.mapper2 & 0x0C) == 0x08) nFileType = 2;
-
-		if (nFileType == 0)
-		{
-
-		}
-
-		if (nFileType == 1)
-		{
-			nPRGBanks = header.prg_rom_chunks;
-			vPRGMemory.resize(nPRGBanks * 16384);
-			ifs.read((char*)vPRGMemory.data(), vPRGMemory.size());
-
-			nCHRBanks = header.chr_rom_chunks;
-			if (nCHRBanks == 0)
-			{
-				// Create CHR RAM
-				vCHRMemory.resize(8192);
-			}
-			else
-			{
-				// Allocate for ROM
-				vCHRMemory.resize(nCHRBanks * 8192);
-			}
-			ifs.read((char*)vCHRMemory.data(), vCHRMemory.size());
-		}
-
-		if (nFileType == 2)
-		{
-			nPRGBanks = ((header.prg_ram_size & 0x07) << 8) | header.prg_rom_chunks;
-			vPRGMemory.resize(nPRGBanks * 16384);
-			ifs.read((char*)vPRGMemory.data(), vPRGMemory.size());
-
-			nCHRBanks = ((header.prg_ram_size & 0x38) << 8) | header.chr_rom_chunks;
-			vCHRMemory.resize(nCHRBanks * 8192);
-			ifs.read((char*)vCHRMemory.data(), vCHRMemory.size());
-		}
-
-		// Load appropriate mapper
-		switch (nMapperID)
-		{
-		case   0: pMapper = std::make_shared<Mapper_000>(nPRGBanks, nCHRBanks); break;
-		case   1: pMapper = std::make_shared<Mapper_001>(nPRGBanks, nCHRBanks); break;
-		case   2: pMapper = std::make_shared<Mapper_002>(nPRGBanks, nCHRBanks); break;
-		case   3: pMapper = std::make_shared<Mapper_003>(nPRGBanks, nCHRBanks); break;
-		case   4: pMapper = std::make_shared<Mapper_004>(nPRGBanks, nCHRBanks); break;
-		case  66: pMapper = std::make_shared<Mapper_066>(nPRGBanks, nCHRBanks); break;
-
-		}
-
-		bImageValid = true;
-		ifs.close();
-	}
-
+    // The reader rejects every unsupported mapper BEFORE allocating ROM
+    // banks; these cases must stay aligned with its explicit support table.
+    switch (nMapperID)
+    {
+        case  0: pMapper = std::make_shared<Mapper_000>(nPRGBanks, nCHRBanks); break;
+        case  1: pMapper = std::make_shared<Mapper_001>(nPRGBanks, nCHRBanks); break;
+        case  2: pMapper = std::make_shared<Mapper_002>(nPRGBanks, nCHRBanks); break;
+        case  3: pMapper = std::make_shared<Mapper_003>(nPRGBanks, nCHRBanks); break;
+        case  4: pMapper = std::make_shared<Mapper_004>(nPRGBanks, nCHRBanks); break;
+        case 66: pMapper = std::make_shared<Mapper_066>(nPRGBanks, nCHRBanks); break;
+        default: return; // defense in depth if support table later changes
+    }
+    bImageValid = pMapper != nullptr;
 }
-
 
 // TEACHING API: Cartridge::~Cartridge
 // Destroys cartridge-owned buffers and shared mapper when the final owner exits.
@@ -141,9 +90,8 @@ Cartridge::~Cartridge()
 }
 
 // TEACHING API: Cartridge::ImageValid
-// Reports the loader's current validity flag to main.cpp before cartridge
-// insertion. Present implementation can mark unsupported mapper IDs valid;
-// documented behavior must not be mistaken for safe input validation.
+// Reports a fully read supported iNES1 image with a constructed mapper.
+// A valid image is not a promise of cycle-accurate mapping or game support.
 bool Cartridge::ImageValid()
 {
 	return bImageValid;
