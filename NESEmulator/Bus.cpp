@@ -30,6 +30,7 @@ module;
 #include <sstream>
 #include <string>
 #include <vector>
+#include "ControllerSerial.hpp"
 #include "KairoPixelGameEngine.cppm"
 module Kairo.NES;
 // TEACHING API: Bus::Bus
@@ -127,15 +128,11 @@ void Bus::cpuWrite(uint16_t addr, uint8_t data)
 // Decodes CPU-visible reads, including controller shift-state and PPU status.
 // bReadOnly requests inspection that should not mutate device state; the PPU
 // receives the flag. The CPU and disassembler call this interface.
-// PPU inspection receives bReadOnly, but the controller shift branch
-// below shifts regardless of this flag. A debugger that uses read-only
-// bus access at $4016/$4017 may still consume input bits: add a
-// regression test before claiming side-effect-free inspection.
-// Reads are device *operations*: PPU status may clear vblank,
-// controller shift registers consume serial bits, and cartridge
-// mapper may translate a PRG bank. Debug bReadOnly is not fully
-// respected by controller reads in this implementation, so a
-// debugger may change input state merely by inspecting $4016.
+// Read operations have hardware side effects: PPU status may clear vblank
+// and ordinary controller reads consume serial bits. But the $4016/$4017
+// controller path now calls ReadControllerSerialBit and preserves the latch
+// when bReadOnly=true. The PPU receives bReadOnly separately; do not infer
+// that every cartridge/APU/register callback is pure without testing it.
 uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 {
 	uint8_t data = 0x00;	
@@ -160,9 +157,10 @@ uint8_t Bus::cpuRead(uint16_t addr, bool bReadOnly)
 	}
 	else if (addr >= 0x4016 && addr <= 0x4017)
 	{
-		// Read out the MSB of the controller status word
-		data = (controller_state[addr & 0x0001] & 0x80) > 0;
-		controller_state[addr & 0x0001] <<= 1;
+		// CPU reads consume one latched button; debugger reads only peek it.
+        // Both paths agree on the current MSB but only CPU reads shift.
+        data = kairo::nes::detail::ReadControllerSerialBit(
+            controller_state[addr & 0x0001], bReadOnly);
 	}
 
 	return data;
