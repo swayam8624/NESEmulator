@@ -6,12 +6,7 @@
 
 ## How to use this guide
 
-**Source-review warnings:** Cartridge.cpp currently lacks complete iNES
-header/payload/unsupported-mapper validation, and Bus::cpuRead shifts
-controller state even when bReadOnly is requested for a controller
-address. These are documented limitations, not fixes in this branch.
-See [the hardware walkthrough](NES_ARCHITECTURE_GUIDE.md) and tests/manual
-trace tools before claiming untrusted-ROM safety or debugger purity.
+**Correctness updates:** [the cartridge/input boundary laboratory](NES_CARTRIDGE_TRUST_BOUNDARY_AND_CONTROLLER_IO_LAB.md) now explains the source-level iNES 1.0 header/payload validation, unsupported mapper/NES 2.0 rejection, PRG/CHR bounds, two-player $4016 latch and read-only debugger controller peeks. Portable C++23 tests and a GCC/Clang CI workflow are committed. These targeted guards do not establish general untrusted-ROM or cycle-accurate hardware compatibility.
 
 Follow one frame from user input to the CPU/PPU bus. The app uses a C++23 module interface; its implementation units share `module Kairo.NES;`.
 
@@ -58,7 +53,7 @@ For each function, distinguish **contract** (preconditions, postconditions, fail
 
 ## Boundaries and honesty
 
-The current tree includes prebuilt executables and no CTest/Actions coverage. Treat APU and mapper compatibility as work to validate, not established console-wide accuracy. Review the provenance of the adapted pixel engine and emulator components before redistribution.
+The tree includes prebuilt binaries; **two new portable input/controller CTest targets and their GitHub Actions workflow are committed**, but executed native app compatibility evidence is not established. Treat APU and mapper compatibility as work to validate, not established console-wide accuracy. Review the provenance of the adapted pixel engine and emulator components before redistribution.
 
 ## Documentation rules
 
@@ -99,4 +94,4 @@ This ordered inventory supplements the **curated** reading path above. It includ
 13. [`NESEmulator/testing2C02.cpp`](../NESEmulator/testing2C02.cpp)
 14. [`NESEmulator/testing6502.cpp`](../NESEmulator/testing6502.cpp)
 
-Source-index snapshot: 18 code/build/test files, 21 other tracked files (including excluded third-party, documentation and assets). Use a new tree audit before treating the index as current after subsequent source changes.
+**Historical source-index snapshot (before this continuation):** 18 code/build/test files and 21 other tracked files. Newly added and directly linked above: `INES1Header.hpp`, `ControllerSerial.hpp`, two `NESEmulator/tests` sources, `scripts/run_nes_input_regressions.sh`, the CPU input CI workflow, and the deep cartridge/controller tutorial. Rebuild the tree inventory before treating it as exhaustive.
