@@ -2,7 +2,7 @@
 
 > A guided source-reading itinerary. It is not a test result or claim that every file is documented yet.
 
-**Work a hardware trace:** [CPU address mirroring, ADC/SBC flags, OAM DMA stalls and one PPU raster pixel](CPU_6502_PPU_BUS_TIMING_LAB.md). This is code-based instruction-level documentation, not a claim of cycle-exact hardware equivalence.
+**Work a hardware trace:** [CPU address mirroring, ADC/SBC flags, OAM DMA stalls and one PPU raster pixel](CPU_6502_PPU_BUS_TIMING_LAB.md). First read the new [iNES cartridge trust boundary and two-player controller I/O laboratory](NES_CARTRIDGE_TRUST_BOUNDARY_AND_CONTROLLER_IO_LAB.md) to understand which untrusted bytes and state reach the CPU/PPU hardware map. Both are code-based lessons, not claims of cycle-exact equivalence.
 
 ## How to use this guide
 
@@ -21,7 +21,10 @@ Read each phase in order. Every link goes to a source file or directory in this 
 
 ## 2. Cartridge and memory
 
-1. [`NESEmulator/Cartridge.cpp`](../NESEmulator/Cartridge.cpp)
+Read the [portable checked iNES1 header/payload parser](../NESEmulator/INES1Header.hpp) and its [synthetic, freely distributable ROM-byte tests](../NESEmulator/tests/INES1CartridgeInputTests.cpp) **before** tracing native Cartridge construction.
+
+1. [`NESEmulator/INES1Header.hpp`](../NESEmulator/INES1Header.hpp)
+2. [`NESEmulator/Cartridge.cpp`](../NESEmulator/Cartridge.cpp)
 2. [`NESEmulator/Mapper.cpp`](../NESEmulator/Mapper.cpp)
 3. [`NESEmulator/Mapper_000.cpp`](../NESEmulator/Mapper_000.cpp)
 4. [`NESEmulator/Mapper_001.cpp`](../NESEmulator/Mapper_001.cpp)
@@ -32,7 +35,10 @@ Read each phase in order. Every link goes to a source file or directory in this 
 
 ## 3. Execution hardware
 
-1. [`NESEmulator/Bus.cpp`](../NESEmulator/Bus.cpp)
+The [controller serial helper](../NESEmulator/ControllerSerial.hpp) and [CPU test](../NESEmulator/tests/ControllerSerialTests.cpp) explain debugger read-only purity and the dual-player $4016 snapshot before reading Bus::cpuRead/cpuWrite.
+
+1. [`NESEmulator/ControllerSerial.hpp`](../NESEmulator/ControllerSerial.hpp)
+2. [`NESEmulator/Bus.cpp`](../NESEmulator/Bus.cpp)
 2. [`NESEmulator/cpu6502.cpp`](../NESEmulator/cpu6502.cpp)
 3. [`NESEmulator/ppu2C02.cpp`](../NESEmulator/ppu2C02.cpp)
 4. [`NESEmulator/apu2A03.cpp`](../NESEmulator/apu2A03.cpp)
@@ -42,6 +48,17 @@ Read each phase in order. Every link goes to a source file or directory in this 
 1. [`NESEmulator/KairoPixelGameEngine.cppm`](../NESEmulator/KairoPixelGameEngine.cppm)
 2. [`NESEmulator/testing6502.cpp`](../NESEmulator/testing6502.cpp)
 3. [`NESEmulator/testing2C02.cpp`](../NESEmulator/testing2C02.cpp)
+
+## 5. Portable input regressions and CI
+
+Read these after the cartridge/controller code and before attempting a game ROM:
+
+1. [`NESEmulator/tests/INES1CartridgeInputTests.cpp`](../NESEmulator/tests/INES1CartridgeInputTests.cpp): header format, CHR RAM, optional trainer, truncated PRG/CHR and mapper rejection
+2. [`NESEmulator/tests/ControllerSerialTests.cpp`](../NESEmulator/tests/ControllerSerialTests.cpp): both-player latch, normal serial reads and nonmutating debugger peeks
+3. [`scripts/run_nes_input_regressions.sh`](../scripts/run_nes_input_regressions.sh): one-command C++23 build and execution without graphics APIs
+4. [`.github/workflows/cpu-nes-input-guards.yml`](../.github/workflows/cpu-nes-input-guards.yml): GCC/Clang portable input safety checks on relevant changes
+
+Run: `bash scripts/run_nes_input_regressions.sh`. A passing CPU test is not a full compatibility or native GPU test.
 
 ## End-to-end interaction map
 
