@@ -1,5 +1,7 @@
 # NES emulator laboratory — one CPU instruction and one PPU pixel
 
+**Extended first-principles continuation:** [one NROM CPU instruction through reset, ADC/SBC flags, scrolling, shifter/palette compositing and MMC3 IRQ](NES_ONE_INSTRUCTION_TO_RASTER_LAB.md) supplies hand-calculated register and pixel examples tied to additional source annotations.
+
 Read [Bus.cpp](../NESEmulator/Bus.cpp), [cpu6502.cpp](../NESEmulator/cpu6502.cpp), [ppu2C02.cpp](../NESEmulator/ppu2C02.cpp), [Cartridge.cpp](../NESEmulator/Cartridge.cpp), [Mapper_004.cpp](../NESEmulator/Mapper_004.cpp) and the larger [NES architecture guide](NES_ARCHITECTURE_GUIDE.md).
 
 This lesson concerns source-level behavior and approximation limits. Compatibility requires independent CPU instruction traces, PPU raster tests and mapper-specific ROM fixtures. The emulator code's original-contributions MIT notice is not a license to redistribute proprietary NES ROM images.
