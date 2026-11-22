@@ -53,6 +53,11 @@ Mapper_004::~Mapper_004()
 // TEACHING API: Mapper_004::cpuMapRead
 // Handle cartridge RAM or resolve one of four 8 KiB PRG windows using the current bank table.
 // Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
+// MMC3 PRG WINDOWS: $8000/$A000/$C000/$E000 each address an 8 KiB
+// region; pPRGBank[0..3] chooses which cartridge PRG bank supplies bytes.
+// Cartridge::cpuRead must verify this computed offset against PRG storage.
+// The $6000-$7FFF special sentinel 0xFFFFFFFF means mapper-owned RAM
+// already supplied data; it is not a valid vector index into PRG ROM.
 bool Mapper_004::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 {
 	if (addr >= 0x6000 && addr <= 0x7FFF)
@@ -98,6 +103,11 @@ bool Mapper_004::cpuMapRead(uint16_t addr, uint32_t &mapped_addr, uint8_t &data)
 // TEACHING API: Mapper_004::cpuMapWrite
 // Decode bank-select/data, mirroring, RAM protection and IRQ registers. This function updates pointers used by future CPU/PPU reads; the PRG-RAM-protect register remains TODO.
 // Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
+// THIS WRITE IS A REGISTER TRANSACTION, not always a PRG ROM write:
+// MMC3 control/data register pairs select bank mode, CHR inversion,
+// mirroring and IRQ reload/enable policy. Cartridge recognizes the
+// 0xFFFFFFFF sentinel so mapper-handled writes do not overwrite PRG ROM.
+// Cross-check each indexed bank against the source ROM's real bank count.
 bool Mapper_004::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 {
 	if (addr >= 0x6000 && addr <= 0x7FFF)
@@ -222,6 +232,10 @@ bool Mapper_004::cpuMapWrite(uint16_t addr, uint32_t &mapped_addr, uint8_t data)
 // TEACHING API: Mapper_004::ppuMapRead
 // Map a 1 KiB CHR address window via the active CHR bank table, including inversion mode.
 // Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
+// PPU CHR WINDOWS: map the visible $0000-$1FFF pattern address through
+// the eight computed 1 KiB window offsets. CHR inversion swaps the
+// arrangement chosen by MMC3 bank-control registers. The Cartridge then
+// validates the returned byte offset against its owned CHR vector.
 bool Mapper_004::ppuMapRead(uint16_t addr, uint32_t &mapped_addr)
 {
 	if (addr >= 0x0000 && addr <= 0x03FF)
@@ -288,6 +302,10 @@ bool Mapper_004::ppuMapWrite(uint16_t addr, uint32_t &mapped_addr)
 // TEACHING API: Mapper_004::reset
 // Initialize bank table/registers and IRQ state to the implemented mapper's reset policy.
 // Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
+// Reset control registers and initial PRG/CHR window offsets after a
+// loaded cartridge is installed. This method does NOT zero ROM arrays;
+// PRG/CHR bytes remain owned by Cartridge. Test small PRG bank counts
+// carefully because the last-two-bank arithmetic assumes valid capacity.
 void Mapper_004::reset()
 {
 	nTargetRegister = 0x00;
@@ -314,6 +332,9 @@ void Mapper_004::reset()
 // TEACHING API: Mapper_004::irqState
 // Expose whether the scanline IRQ latch is active so Bus can signal the CPU.
 // Integration: MMC3: independent PRG/CHR bank windows, mirroring register and scanline-based IRQ state.
+// The Bus polls this latch after PPU/CPU scheduling; it is not a
+// direct CPU clock interrupt. IRQ state is independent of whether the
+// CPU is currently masking interrupts with its status I bit.
 bool Mapper_004::irqState()
 {
 	return bIRQActive;
@@ -333,6 +354,10 @@ void Mapper_004::irqClear()
 // Update the mapper IRQ latch/counter from the PPU's scanline
 // callback. This simplified interface is less precise than a true A12
 // rising-edge-qualified MMC3 counter; document any accuracy tests.
+// WORKED IRQ COUNTER: if reload=2, enabled=true, initial counter=0,
+// successive calls set counter=2, then 1, then 0 and assert IRQ.
+// This code counts explicit PPU scanline notifications, not hardware's
+// qualified PPU A12 rises; therefore its timing is an approximation.
 void Mapper_004::scanline()
 {
 	if (nIRQCounter == 0)
